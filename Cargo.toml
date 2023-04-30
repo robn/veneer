@@ -1,0 +1,12 @@
+[package]
+name = "veneer"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+derivative = "2.2.0"
+hexdump = "0.1.1"
+iocuddle = "0.1.1"
