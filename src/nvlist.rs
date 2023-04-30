@@ -34,8 +34,7 @@ const DATA_TYPE_DOUBLE:        i32 = 27;
 pub enum UnpackError {
     InvalidEncoding,
     InvalidEndian,
-    UnterminatedPairName,
-    UnterminatedStringValue,
+    UnterminatedString,
     UnknownPairType(i32),
     IOError(std::io::Error),
 }
@@ -43,12 +42,11 @@ pub enum UnpackError {
 impl Error for UnpackError {
     fn description(&self) -> &str {
         match *self {
-            UnpackError::InvalidEncoding         => "invalid encoding",
-            UnpackError::InvalidEndian           => "invalid endian",
-            UnpackError::UnterminatedPairName    => "unterminated pair name",
-            UnpackError::UnterminatedStringValue => "unterminated string value",
-            UnpackError::UnknownPairType(_)      => "unknown pair type",
-            UnpackError::IOError(_)              => "IO error",
+            UnpackError::InvalidEncoding    => "invalid encoding",
+            UnpackError::InvalidEndian      => "invalid endian",
+            UnpackError::UnterminatedString => "unterminated string",
+            UnpackError::UnknownPairType(_) => "unknown pair type",
+            UnpackError::IOError(_)         => "IO error",
         }
     }
 }
@@ -56,12 +54,11 @@ impl Error for UnpackError {
 impl std::fmt::Display for UnpackError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
-            UnpackError::InvalidEncoding         => f.write_str("InvalidEncoding"),
-            UnpackError::InvalidEndian           => f.write_str("InvalidEndian"),
-            UnpackError::UnterminatedPairName    => f.write_str("UnterminatedPairName"),
-            UnpackError::UnterminatedStringValue => f.write_str("UnterminatedStringValue"),
-            UnpackError::UnknownPairType(_)      => f.write_str("UnknownPairType"),
-            UnpackError::IOError(_)              => f.write_str("IOError"),
+            UnpackError::InvalidEncoding    => f.write_str("InvalidEncoding"),
+            UnpackError::InvalidEndian      => f.write_str("InvalidEndian"),
+            UnpackError::UnterminatedString => f.write_str("UnterminatedStringValue"),
+            UnpackError::UnknownPairType(_) => f.write_str("UnknownPairType"),
+            UnpackError::IOError(_)         => f.write_str("IOError"),
         }
     }
 }
@@ -72,15 +69,9 @@ impl From<std::io::Error> for UnpackError {
     }
 }
 
-impl From<std::ffi::FromVecWithNulError> for UnpackError {
-    fn from(_: std::ffi::FromVecWithNulError) -> Self {
-        UnpackError::UnterminatedPairName
-    }
-}
-
 impl From<core::ffi::FromBytesUntilNulError> for UnpackError {
     fn from(_: core::ffi::FromBytesUntilNulError) -> Self {
-        UnpackError::UnterminatedStringValue
+        UnpackError::UnterminatedString
     }
 }
 
@@ -154,10 +145,10 @@ macro_rules! int_at {
 }
 
 macro_rules! cstring_at {
-    ($slice:expr, $offset:expr, $length:expr) => {
+    ($slice:expr, $offset:expr) => {
         {
-            let s = &$slice[$offset..$offset+$length];
-            CString::from_vec_with_nul(s.try_into().unwrap())?
+            let s = &$slice[$offset..];
+            CStr::from_bytes_until_nul(s)?.into()
         }
     };
 }
@@ -198,7 +189,7 @@ fn unpack_pairs(mut buf: &[u8]) -> Result<(Vec<Pair>, &[u8]), UnpackError> {
         println!("len={} name_len={} value_len={} nelems={} typ={}",
             len, name_len, value_len, nelems, typ);
 
-        let name = cstring_at!(pbuf, 12, name_len as usize);
+        let name = cstring_at!(pbuf, 12);
         println!("{:?}", name);
 
         let voff = 12 + align(name_len as usize);
@@ -219,9 +210,7 @@ fn unpack_pairs(mut buf: &[u8]) -> Result<(Vec<Pair>, &[u8]), UnpackError> {
             */
 
             DATA_TYPE_UINT64        => Data::UInt64(int_at!(vbuf, 0, u64)),
-            DATA_TYPE_STRING        => {
-                Data::String(CStr::from_bytes_until_nul(&vbuf)?.into())
-            },
+            DATA_TYPE_STRING        => Data::String(cstring_at!(vbuf, 0)),
 
             /*
             DATA_TYPE_BYTE_ARRAY    => todo!(), 
