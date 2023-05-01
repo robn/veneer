@@ -162,8 +162,10 @@ fn unpack_pairs(mut buf: &[u8]) ->
     let mut pairs: HashMap<CString,Data> = HashMap::new();
 
     loop {
+        /*
         println!("----------");
         println!("pairs={}, buf={}", pairs.len(), buf.len());
+        */
 
         let (lbuf, pbuf);
 
@@ -185,17 +187,21 @@ fn unpack_pairs(mut buf: &[u8]) ->
 
         let value_len = (len - name_len as usize - 12) & !0x7;
 
+        /*
         println!("len={} name_len={} value_len={} nelems={} typ={}",
             len, name_len, value_len, nelems, typ);
+        */
 
         let name = cstring_at!(pbuf, 12);
-        println!("{:?}", name);
+        //println!("{:?}", name);
 
         let voff = 12 + align(name_len as usize);
         let vbuf = &pbuf[voff..];
 
+        /*
         println!("value offset: {:08x}", voff);
         hexdump::hexdump(&vbuf);
+        */
 
         let data = match typ {
             DATA_TYPE_BOOLEAN       => Data::Boolean,
@@ -259,7 +265,7 @@ fn unpack_pairs(mut buf: &[u8]) ->
             t                       => return Err(UnpackError::UnknownPairType(t)),
         };
 
-        println!("{:?}", data);
+        //println!("{:?}", data);
 
         pairs.insert(name, data);
     }
