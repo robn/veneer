@@ -103,6 +103,7 @@ pub struct Command {
     #[derivative(Default(value="null()"))]
     pub nvlist_dst:         *const u8,
     pub nvlist_dst_size:    u64,
+    pad2:               i32,
 
     // legacy
     #[derivative(Default(value="null()"))]
@@ -115,7 +116,7 @@ pub struct Command {
     #[derivative(Default(value="null()"))]
     nvlist_conf:        *const u8,
     nvlist_conf_size:   u64,
-    cookie:             u64,
+    pub cookie:             u64,
     objset_type:        u64,
     perm_action:        u64,
     history_len:        u64,
