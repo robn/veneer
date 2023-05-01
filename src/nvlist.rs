@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::ffi::{CStr,CString};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 // data_type_t from include/sys/nvpair.h
 const DATA_TYPE_BOOLEAN:       i32 = 1;
@@ -123,7 +123,7 @@ pub enum Data {
 pub struct List {
     pub version: i32,
     pub flags:   u32,
-    pub pairs:   BTreeMap<CString,Data>,
+    pub pairs:   HashMap<CString,Data>,
 }
 
 #[derive(Debug)]
@@ -157,9 +157,9 @@ fn align(n: usize) -> usize {
 }
 
 fn unpack_pairs(mut buf: &[u8]) ->
-  Result<(BTreeMap<CString,Data>, &[u8]), UnpackError> {
+  Result<(HashMap<CString,Data>, &[u8]), UnpackError> {
 
-    let mut pairs: BTreeMap<CString,Data> = BTreeMap::new();
+    let mut pairs: HashMap<CString,Data> = HashMap::new();
 
     loop {
         println!("----------");
