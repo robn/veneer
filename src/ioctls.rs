@@ -143,6 +143,7 @@ pub struct Command {
 
 macro_rules! zfs_ioctl {
     ($name:ident, $id:expr) => {
+	#[allow(unused)]
         pub const $name: Ioctl<WriteRead, &Command> =
             unsafe { Ioctl::classic($id) };
     }
