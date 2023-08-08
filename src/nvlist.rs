@@ -1,42 +1,47 @@
 use std::error::Error;
 use std::ffi::{CStr,CString};
 use std::collections::HashMap;
+use num_traits::FromPrimitive;
 
 // data_type_t from include/sys/nvpair.h
-const DATA_TYPE_BOOLEAN:       i32 = 1;
-const DATA_TYPE_BYTE:          i32 = 2;
-const DATA_TYPE_INT16:         i32 = 3;
-const DATA_TYPE_UINT16:        i32 = 4;
-const DATA_TYPE_INT32:         i32 = 5;
-const DATA_TYPE_UINT32:        i32 = 6;
-const DATA_TYPE_INT64:         i32 = 7;
-const DATA_TYPE_UINT64:        i32 = 8;
-const DATA_TYPE_STRING:        i32 = 9;
-const DATA_TYPE_BYTE_ARRAY:    i32 = 10;
-const DATA_TYPE_INT16_ARRAY:   i32 = 11;
-const DATA_TYPE_UINT16_ARRAY:  i32 = 12;
-const DATA_TYPE_INT32_ARRAY:   i32 = 13;
-const DATA_TYPE_UINT32_ARRAY:  i32 = 14;
-const DATA_TYPE_INT64_ARRAY:   i32 = 15;
-const DATA_TYPE_UINT64_ARRAY:  i32 = 16;
-const DATA_TYPE_STRING_ARRAY:  i32 = 17;
-const DATA_TYPE_HRTIME:        i32 = 18;
-const DATA_TYPE_NVLIST:        i32 = 19;
-const DATA_TYPE_NVLIST_ARRAY:  i32 = 20;
-const DATA_TYPE_BOOLEAN_VALUE: i32 = 21;
-const DATA_TYPE_INT8:          i32 = 22;
-const DATA_TYPE_UINT8:         i32 = 23;
-const DATA_TYPE_BOOLEAN_ARRAY: i32 = 24;
-const DATA_TYPE_INT8_ARRAY:    i32 = 25;
-const DATA_TYPE_UINT8_ARRAY:   i32 = 26;
-const DATA_TYPE_DOUBLE:        i32 = 27;
+#[derive(Debug,FromPrimitive)]
+#[allow(non_camel_case_types)]
+enum DataType {
+    BOOLEAN       = 1,
+    BYTE          = 2,
+    INT16         = 3,
+    UINT16        = 4,
+    INT32         = 5,
+    UINT32        = 6,
+    INT64         = 7,
+    UINT64        = 8,
+    STRING        = 9,
+    BYTE_ARRAY    = 10,
+    INT16_ARRAY   = 11,
+    UINT16_ARRAY  = 12,
+    INT32_ARRAY   = 13,
+    UINT32_ARRAY  = 14,
+    INT64_ARRAY   = 15,
+    UINT64_ARRAY  = 16,
+    STRING_ARRAY  = 17,
+    HRTIME        = 18,
+    NVLIST        = 19,
+    NVLIST_ARRAY  = 20,
+    BOOLEAN_VALUE = 21,
+    INT8          = 22,
+    UINT8         = 23,
+    BOOLEAN_ARRAY = 24,
+    INT8_ARRAY    = 25,
+    UINT8_ARRAY   = 26,
+    DOUBLE        = 27,
+}
 
 #[derive(Debug)]
 pub enum UnpackError {
     InvalidEncoding,
     InvalidEndian,
     UnterminatedString,
-    UnknownPairType(i32),
+    UnknownPairType(DataType),
     IOError(std::io::Error),
 }
 
@@ -203,29 +208,31 @@ fn unpack_pairs(mut buf: &[u8]) ->
         hexdump::hexdump(&vbuf);
         */
 
-        let data = match typ {
-            DATA_TYPE_BOOLEAN       => Data::Boolean,
+        let nvtype = FromPrimitive::from_i32(typ).unwrap(); // XXX handle unknown
+
+        let data = match nvtype {
+            DataType::BOOLEAN       => Data::Boolean,
             /*
-            DATA_TYPE_BYTE          => todo!(), 
-            DATA_TYPE_INT16         => todo!(), 
-            DATA_TYPE_UINT16        => todo!(), 
-            DATA_TYPE_INT32         => todo!(), 
-            DATA_TYPE_UINT32        => todo!(), 
-            DATA_TYPE_INT64         => todo!(), 
+            DataType::BYTE          => todo!(), 
+            DataType::INT16         => todo!(), 
+            DataType::UINT16        => todo!(), 
+            DataType::INT32         => todo!(), 
+            DataType::UINT32        => todo!(), 
+            DataType::INT64         => todo!(), 
             */
 
-            DATA_TYPE_UINT64        => Data::UInt64(int_at!(vbuf, 0, u64)),
-            DATA_TYPE_STRING        => Data::String(cstring_at!(vbuf, 0)),
+            DataType::UINT64        => Data::UInt64(int_at!(vbuf, 0, u64)),
+            DataType::STRING        => Data::String(cstring_at!(vbuf, 0)),
 
             /*
-            DATA_TYPE_BYTE_ARRAY    => todo!(), 
-            DATA_TYPE_INT16_ARRAY   => todo!(), 
-            DATA_TYPE_UINT16_ARRAY  => todo!(), 
-            DATA_TYPE_INT32_ARRAY   => todo!(), 
-            DATA_TYPE_UINT32_ARRAY  => todo!(), 
-            DATA_TYPE_INT64_ARRAY  => todo!(), 
+            DataType::BYTE_ARRAY    => todo!(), 
+            DataType::INT16_ARRAY   => todo!(), 
+            DataType::UINT16_ARRAY  => todo!(), 
+            DataType::INT32_ARRAY   => todo!(), 
+            DataType::UINT32_ARRAY  => todo!(), 
+            DataType::INT64_ARRAY  => todo!(), 
             */
-            DATA_TYPE_UINT64_ARRAY   => {
+            DataType::UINT64_ARRAY   => {
                 let mut v = vec![];
                 for elem in 0..nelems {
                     v.push(int_at!(vbuf, elem as usize * 8, u64));
@@ -233,16 +240,16 @@ fn unpack_pairs(mut buf: &[u8]) ->
                 Data::UInt64Array(v)
             },
             /*
-            DATA_TYPE_STRING_ARRAY  => todo!(), 
-            DATA_TYPE_HRTIME        => todo!(), 
+            DataType::STRING_ARRAY  => todo!(), 
+            DataType::HRTIME        => todo!(), 
             */
 
-            DATA_TYPE_NVLIST        => {
+            DataType::NVLIST        => {
                 let l;
                 (l, buf) = unpack_list(buf, true)?;
                 Data::List(l)
             },
-            DATA_TYPE_NVLIST_ARRAY  => {
+            DataType::NVLIST_ARRAY  => {
                 let mut v = vec![];
                 for _ in 0..nelems {
                     let l;
@@ -253,13 +260,13 @@ fn unpack_pairs(mut buf: &[u8]) ->
             },
 
             /*
-            DATA_TYPE_BOOLEAN_VALUE => todo!(), 
-            DATA_TYPE_INT8          => todo!(), 
-            DATA_TYPE_UINT8         => todo!(), 
-            DATA_TYPE_BOOLEAN_ARRAY => todo!(), 
-            DATA_TYPE_INT8_ARRAY    => todo!(), 
-            DATA_TYPE_UINT8_ARRAY   => todo!(), 
-            DATA_TYPE_DOUBLE        => todo!(), 
+            DataType::BOOLEAN_VALUE => todo!(), 
+            DataType::INT8          => todo!(), 
+            DataType::UINT8         => todo!(), 
+            DataType::BOOLEAN_ARRAY => todo!(), 
+            DataType::INT8_ARRAY    => todo!(), 
+            DataType::UINT8_ARRAY   => todo!(), 
+            DataType::DOUBLE        => todo!(), 
             */
 
             t                       => return Err(UnpackError::UnknownPairType(t)),

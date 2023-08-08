@@ -5,6 +5,9 @@ use std::error::Error;
 use std::ffi::{CStr,CString};
 use std::fs::File;
 
+#[macro_use]
+extern crate num_derive;
+
 fn zc_new() -> (ioctls::Command, Box<[u8; 262144]>) {
     let mut zc: ioctls::Command = Default::default();
     let buf: Box<[u8; 262144]> = Box::new([0; 262144]);
