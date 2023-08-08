@@ -42,7 +42,6 @@ pub enum UnpackError {
     InvalidEndian,
     UnterminatedString,
     UnknownPairType(DataType),
-    IOError(std::io::Error),
 }
 
 impl Error for UnpackError {
@@ -52,7 +51,6 @@ impl Error for UnpackError {
             UnpackError::InvalidEndian      => "invalid endian",
             UnpackError::UnterminatedString => "unterminated string",
             UnpackError::UnknownPairType(_) => "unknown pair type",
-            UnpackError::IOError(_)         => "IO error",
         }
     }
 }
@@ -64,14 +62,7 @@ impl std::fmt::Display for UnpackError {
             UnpackError::InvalidEndian      => f.write_str("InvalidEndian"),
             UnpackError::UnterminatedString => f.write_str("UnterminatedStringValue"),
             UnpackError::UnknownPairType(_) => f.write_str("UnknownPairType"),
-            UnpackError::IOError(_)         => f.write_str("IOError"),
         }
-    }
-}
-
-impl From<std::io::Error> for UnpackError {
-    fn from(e: std::io::Error) -> Self {
-        UnpackError::IOError(e)
     }
 }
 
