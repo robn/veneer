@@ -41,7 +41,7 @@ pub enum UnpackError {
     InvalidEncoding,
     InvalidEndian,
     UnterminatedString,
-    UnknownPairType(DataType),
+    UnknownPairType(i32),
 }
 
 impl Error for UnpackError {
@@ -199,30 +199,29 @@ fn unpack_pairs(mut buf: &[u8]) ->
         hexdump::hexdump(&vbuf);
         */
 
-        let nvtype = FromPrimitive::from_i32(typ).unwrap(); // XXX handle unknown
+        let nvtype = FromPrimitive::from_i32(typ).
+            ok_or(UnpackError::UnknownPairType(typ))?;
 
         let data = match nvtype {
             DataType::BOOLEAN       => Data::Boolean,
-            /*
-            DataType::BYTE          => todo!(), 
-            DataType::INT16         => todo!(), 
-            DataType::UINT16        => todo!(), 
-            DataType::INT32         => todo!(), 
-            DataType::UINT32        => todo!(), 
-            DataType::INT64         => todo!(), 
-            */
+
+            DataType::BYTE          => todo!(),
+            DataType::INT16         => todo!(),
+            DataType::UINT16        => todo!(),
+            DataType::INT32         => todo!(),
+            DataType::UINT32        => todo!(),
+            DataType::INT64         => todo!(),
 
             DataType::UINT64        => Data::UInt64(int_at!(vbuf, 0, u64)),
             DataType::STRING        => Data::String(cstring_at!(vbuf, 0)),
 
-            /*
-            DataType::BYTE_ARRAY    => todo!(), 
-            DataType::INT16_ARRAY   => todo!(), 
-            DataType::UINT16_ARRAY  => todo!(), 
-            DataType::INT32_ARRAY   => todo!(), 
-            DataType::UINT32_ARRAY  => todo!(), 
-            DataType::INT64_ARRAY  => todo!(), 
-            */
+            DataType::BYTE_ARRAY    => todo!(),
+            DataType::INT16_ARRAY   => todo!(),
+            DataType::UINT16_ARRAY  => todo!(),
+            DataType::INT32_ARRAY   => todo!(),
+            DataType::UINT32_ARRAY  => todo!(),
+            DataType::INT64_ARRAY  => todo!(),
+
             DataType::UINT64_ARRAY   => {
                 let mut v = vec![];
                 for elem in 0..nelems {
@@ -230,10 +229,9 @@ fn unpack_pairs(mut buf: &[u8]) ->
                 }
                 Data::UInt64Array(v)
             },
-            /*
-            DataType::STRING_ARRAY  => todo!(), 
-            DataType::HRTIME        => todo!(), 
-            */
+
+            DataType::STRING_ARRAY  => todo!(),
+            DataType::HRTIME        => todo!(),
 
             DataType::NVLIST        => {
                 let l;
@@ -250,17 +248,13 @@ fn unpack_pairs(mut buf: &[u8]) ->
                 Data::ListArray(v)
             },
 
-            /*
-            DataType::BOOLEAN_VALUE => todo!(), 
-            DataType::INT8          => todo!(), 
-            DataType::UINT8         => todo!(), 
-            DataType::BOOLEAN_ARRAY => todo!(), 
-            DataType::INT8_ARRAY    => todo!(), 
-            DataType::UINT8_ARRAY   => todo!(), 
-            DataType::DOUBLE        => todo!(), 
-            */
-
-            t                       => return Err(UnpackError::UnknownPairType(t)),
+            DataType::BOOLEAN_VALUE => todo!(),
+            DataType::INT8          => todo!(),
+            DataType::UINT8         => todo!(),
+            DataType::BOOLEAN_ARRAY => todo!(),
+            DataType::INT8_ARRAY    => todo!(),
+            DataType::UINT8_ARRAY   => todo!(),
+            DataType::DOUBLE        => todo!(),
         };
 
         //println!("{:?}", data);
