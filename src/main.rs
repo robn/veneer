@@ -87,9 +87,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     ioctls::ZFS_IOC_POOL_CONFIGS.ioctl(&mut z, &mut zc).unwrap();
     let nvbuf = &buf[0..zc.nvlist_dst_size as usize];
 
+    /*
     let mut i = nvpair::parser(nvbuf)?.iter();
-    let p = i.next();
-    println!("{:#?}", p);
+    println!("{:#?}", i.next());
+    println!("{:#?}", i.next());
+    println!("{:#?}", i.next());
+    */
+    let pairs: Vec<_> = nvpair::parser(nvbuf)?.iter().flatten().collect();
+    println!("{:#?}", pairs);
 
 /*
     let configs = ioc_pool_configs(&mut z)?;
