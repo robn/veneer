@@ -56,8 +56,8 @@ pub enum PairData {
     UInt64Array(Vec<u64>),
     StringArray(Vec<CString>),
     HiResTime(i64),             // XXX hrtime_t -> longlong_t -> i64
-    List(Vec<Pair>),
-    ListArray(Vec<Vec<Pair>>),
+    List(List),
+    ListArray(Vec<List>),
     BooleanValue(bool),
     Int8(i8),
     UInt8(u8),
@@ -69,6 +69,9 @@ pub enum PairData {
 
 #[derive(Debug)]
 pub struct Pair(CString,PairData);
+
+#[derive(Debug)]
+pub struct List(Vec<Pair>);
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -129,7 +132,7 @@ fn align(n: usize) -> usize {
     (n + 7) & ! 7
 }
 
-pub fn parse<R: Read>(mut r: R) -> Result<Option<Pair>,ParseError> {
+pub fn parse<R: Read>(mut r: R) -> Result<List,ParseError> {
     let mut buf: Vec<u8> = vec![];
     r.read_to_end(&mut buf)?;
     Parser::new().parse(&buf)
@@ -140,7 +143,7 @@ impl Parser {
         Parser
     }
 
-    fn parse<'a>(&'a self, buf: &'a [u8]) -> Result<Option<Pair>,ParseError> {
+    fn parse<'a>(&'a self, buf: &'a [u8]) -> Result<List,ParseError> {
         let encoding = match buf[0] {
             0 => Encoding::Native,
             1 => Encoding::XDR,
@@ -163,7 +166,8 @@ impl Parser {
         assert_eq!(version, 0); // NV_VERSION
         assert_eq!(flags, 1);   // XXX NV_UNIQUE_NAME|NV_UNIQUE_NAME_TYPE
 
-        Ok(self.parse_pair(&lbuf)?.0)
+        let (l, _) = self.parse_nvlist(&lbuf)?;
+        Ok(l)
     }
 
     fn parse_int<'a, T>(&'a self, buf: &'a [u8]) -> Result<(T,&[u8]),ParseError>
@@ -182,7 +186,7 @@ impl Parser {
         Ok((cstr.into(), &buf[s..]))
     }
 
-    fn parse_nvlist<'a>(&'a self, buf: &'a [u8]) -> Result<(Vec<Pair>,&[u8]),ParseError> {
+    fn parse_nvlist<'a>(&'a self, buf: &'a [u8]) -> Result<(List,&[u8]),ParseError> {
         let mut pairs = vec![];
         let mut nbuf = buf;
         loop {
@@ -191,7 +195,7 @@ impl Parser {
                     pairs.push(pair);
                     buf
                 },
-                (None, buf) => return Ok((pairs, buf)),
+                (None, buf) => return Ok((List(pairs), buf)),
             }
         }
     }
@@ -274,14 +278,3 @@ impl Parser {
         Ok((Some(Pair(name, data)), nbuf))
     }
 }
-
-/*
-impl<R: Read> Iterator for PairIterator<R> {
-    type Item=Result<Pair,ParseError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.take_pair().transpose()
-    }
-
-}
-*/
