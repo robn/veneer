@@ -93,8 +93,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("{:#?}", i.next());
     println!("{:#?}", i.next());
     */
-    let pairs: Vec<_> = nvpair::parser(nvbuf)?.iter().flatten().collect();
-    println!("{:#?}", pairs);
+    let list = nvpair::parse(nvbuf)?;
+    println!("{:#?}", list);
 
 /*
     let configs = ioc_pool_configs(&mut z)?;

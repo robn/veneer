@@ -1,5 +1,4 @@
 use std::io::{self, Read};
-use std::iter::Iterator;
 use std::fmt;
 use std::ffi::{CStr, CString};
 use desert::FromBytesLE;
@@ -57,8 +56,8 @@ pub enum PairData {
     UInt64Array(Vec<u64>),
     StringArray(Vec<CString>),
     HiResTime(i64),             // XXX hrtime_t -> longlong_t -> i64
-    List(List),
-    ListArray(Vec<List>),
+    List(Vec<Pair>),
+    ListArray(Vec<Vec<Pair>>),
     BooleanValue(bool),
     Int8(i8),
     UInt8(u8),
@@ -70,14 +69,6 @@ pub enum PairData {
 
 #[derive(Debug)]
 pub struct Pair(CString,PairData);
-
-#[derive(Debug)]
-pub struct List {
-    pub version: i32,
-    pub flags:   u32,
-    //pub pairs    Vec<Pair>,
-    //pub pairs:   HashMap<CString,Data>,
-}
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -131,65 +122,50 @@ pub enum Endian {
 }
 
 #[derive(Debug)]
-pub struct Parser<R> {
-    r: R,
-    encoding: Encoding,
-    endian: Endian,
-}
-
-pub fn parser<R: Read>(mut r: R) -> Result<Parser<R>, ParseError> {
-    let mut buf: [u8; 4] = [0; 4];
-    r.read_exact(&mut buf)?;
-
-    let encoding = match buf[0] {
-        0 => Encoding::Native,
-        1 => Encoding::XDR,
-        _ => return Err(ParseError::InvalidEncoding),
-    };
-    let endian = match buf[1] {
-        0 => Endian::Big,
-        1 => Endian::Little,
-        _ => return Err(ParseError::InvalidEndian),
-    };
-
-    assert_eq!(encoding, Encoding::Native);
-    assert_eq!(endian, Endian::Little);
-
-    // The top list is implied, so just move the ptr to the first pair.
-    r.read_exact(&mut buf)?;
-    let version = i32::from_bytes_le(&buf).unwrap().1;
-    r.read_exact(&mut buf)?;
-    let flags = u32::from_bytes_le(&buf).unwrap().1;
-
-    assert_eq!(version, 0); // NV_VERSION
-    assert_eq!(flags, 1);   // XXX NV_UNIQUE_NAME|NV_UNIQUE_NAME_TYPE
-
-    Ok(Parser {
-        r,
-        encoding,
-        endian,
-    })
-}
-
-impl<R: Read> Parser<R> {
-    pub fn iter(self) -> PairIterator<R> {
-        PairIterator {
-            p: self,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct PairIterator<R> {
-    p: Parser<R>,
-}
+pub struct Parser;
 
 #[inline(always)]
 fn align(n: usize) -> usize {
     (n + 7) & ! 7
 }
 
-impl<R: Read> PairIterator<R> {
+pub fn parse<R: Read>(mut r: R) -> Result<Option<Pair>,ParseError> {
+    let mut buf: Vec<u8> = vec![];
+    r.read_to_end(&mut buf)?;
+    Parser::new().parse(&buf)
+}
+
+impl Parser {
+    pub fn new() -> Parser {
+        Parser
+    }
+
+    fn parse<'a>(&'a self, buf: &'a [u8]) -> Result<Option<Pair>,ParseError> {
+        let encoding = match buf[0] {
+            0 => Encoding::Native,
+            1 => Encoding::XDR,
+            _ => return Err(ParseError::InvalidEncoding),
+        };
+        let endian = match buf[1] {
+            0 => Endian::Big,
+            1 => Endian::Little,
+            _ => return Err(ParseError::InvalidEndian),
+        };
+
+        assert_eq!(encoding, Encoding::Native);
+        assert_eq!(endian, Endian::Little);
+
+        let lbuf = &buf[4..];
+
+        let (version, lbuf) = self.parse_int::<i32>(&lbuf)?;
+        let (flags, lbuf) = self.parse_int::<u32>(&lbuf)?;
+
+        assert_eq!(version, 0); // NV_VERSION
+        assert_eq!(flags, 1);   // XXX NV_UNIQUE_NAME|NV_UNIQUE_NAME_TYPE
+
+        Ok(self.parse_pair(&lbuf)?.0)
+    }
+
     fn parse_int<'a, T>(&'a self, buf: &'a [u8]) -> Result<(T,&[u8]),ParseError>
     where
         T: FromBytesLE
@@ -206,33 +182,27 @@ impl<R: Read> PairIterator<R> {
         Ok((cstr.into(), &buf[s..]))
     }
 
-    fn parse_nvlist<'a>(&'a self, buf: &'a [u8]) -> Result<(List,&[u8]),ParseError> {
-        let (version, buf) = self.parse_int::<i32>(buf)?;
-        let (flags, mut buf) = self.parse_int::<u32>(buf)?;
-
-        buf = &buf[8..]; // only for embedded nvlists, not root
-
-        //let (pairs, rest) = unpack_pairs(pairs_buf)?;
-
-        Ok((List {
-            version: version,
-            flags: flags,
-        }, buf))
+    fn parse_nvlist<'a>(&'a self, buf: &'a [u8]) -> Result<(Vec<Pair>,&[u8]),ParseError> {
+        let mut pairs = vec![];
+        let mut nbuf = buf;
+        loop {
+            nbuf = match self.parse_pair(nbuf)? {
+                (Some(pair), buf) => {
+                    pairs.push(pair);
+                    buf
+                },
+                (None, buf) => return Ok((pairs, buf)),
+            }
+        }
     }
 
-    fn take_pair(&mut self) -> Result<Option<Pair>,ParseError> {
-        let len: usize = {
-            let mut buf: [u8; 4] = [0; 4];
-            self.p.r.read_exact(&mut buf)?;
-            let (len, _) = self.parse_int::<u32>(&buf)?;
-            len as usize
-        };
+    fn parse_pair<'a>(&'a self, buf: &'a [u8]) -> Result<(Option<Pair>,&[u8]),ParseError> {
+        let (len, buf) = self.parse_int::<u32>(&buf)?;
         if len == 0 {
-            return Ok(None);
+            return Ok((None, buf));
         }
 
-        let mut buf = vec![0; len-4];
-        self.p.r.read_exact(&mut buf)?;
+        let (buf, nbuf) = buf.split_at((len-4) as usize);
 
         let (name_len, mut buf) = self.parse_int::<i16>(&buf)?;
         buf = &buf[2..]; // int16_t nvp_reserve
@@ -245,7 +215,7 @@ impl<R: Read> PairIterator<R> {
         let typ: PairType = FromPrimitive::from_i32(ityp).
             ok_or(ParseError::UnknownPairType(ityp))?;
 
-        println!("name {:?} nelems {:?} typ {:#?}", name, nelems, typ);
+        //println!("name {:?} nelems {:?} typ {:?}", name, nelems, typ);
 
         let data = match typ {
             PairType::Boolean       => PairData::Boolean,
@@ -279,31 +249,18 @@ impl<R: Read> PairIterator<R> {
             PairType::StringArray   => todo!(),
             PairType::HiResTime     => todo!(),
 
-            PairType::NVList      => PairData::List(self.parse_nvlist(&buf)?.0),
+            PairType::NVList => {
+                let (l, nbuf) = self.parse_nvlist(&nbuf)?;
+                PairData::List(l)
+            },
             PairType::NVListArray => {
                 let mut v = vec![];
                 for _ in 0..nelems {
-                    let (l, buf) = self.parse_nvlist(&buf)?;
+                    let (l, nbuf) = self.parse_nvlist(&nbuf)?;
                     v.push(l);
                 }
                 PairData::ListArray(v)
             },
-/*
-            PairType::Nvlist        => {
-                let l;
-                (l, buf) = unpack_list(buf, true)?;
-                Data::List(l)
-            },
-            PairType::NvlistArray  => {
-                let mut v = vec![];
-                for _ in 0..nelems {
-                    let l;
-                    (l, buf) = unpack_list(buf, true)?;
-                    v.push(l);
-                }
-                Data::ListArray(v)
-            },
-*/
 
             PairType::BooleanValue  => todo!(),
             PairType::Int8          => todo!(),
@@ -314,12 +271,11 @@ impl<R: Read> PairIterator<R> {
             PairType::Double        => todo!(),
         };
 
-        //Ok(Some(Pair { name, nelems, typ }))
-
-        Ok(Some(Pair(name, data)))
+        Ok((Some(Pair(name, data)), nbuf))
     }
 }
 
+/*
 impl<R: Read> Iterator for PairIterator<R> {
     type Item=Result<Pair,ParseError>;
 
@@ -328,3 +284,4 @@ impl<R: Read> Iterator for PairIterator<R> {
     }
 
 }
+*/
