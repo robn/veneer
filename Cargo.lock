@@ -26,6 +26,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "desert"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5ea5454021aef7a7056fa86185a2ce4425b010b8b8ff3aa04129ad08d3cf115"
+
+[[package]]
 name = "hexdump"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -118,6 +124,7 @@ name = "veneer"
 version = "0.1.0"
 dependencies = [
  "derivative",
+ "desert",
  "hexdump",
  "iocuddle",
  "num-derive",

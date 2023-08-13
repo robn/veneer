@@ -1,5 +1,6 @@
 mod ioctls;
 mod nvlist;
+mod nvpair;
 
 use std::error::Error;
 use std::ffi::{CStr,CString};
@@ -28,6 +29,15 @@ fn ioc_pool_stats(z: &mut File, pool: &CStr) -> Result<nvlist::Header, Box<dyn E
     let name = pool.to_bytes_with_nul();
     zc.name[..name.len()].copy_from_slice(&name);
     ioctls::ZFS_IOC_POOL_STATS.ioctl(z, &mut zc);
+    let nvbuf = &buf[0..zc.nvlist_dst_size as usize];
+    Ok(nvlist::unpack(nvbuf)?)
+}
+
+fn ioc_pool_get_props(z: &mut File, pool: &CStr) -> Result<nvlist::Header, Box<dyn Error>> {
+    let (mut zc, mut buf) = zc_new();
+    let name = pool.to_bytes_with_nul();
+    zc.name[..name.len()].copy_from_slice(&name);
+    ioctls::ZFS_IOC_POOL_GET_PROPS.ioctl(z, &mut zc);
     let nvbuf = &buf[0..zc.nvlist_dst_size as usize];
     Ok(nvlist::unpack(nvbuf)?)
 }
@@ -73,13 +83,28 @@ fn iter_dataset(z: &mut File, dataset: &CStr) -> Result<(), Box<dyn Error>> {
 fn main() -> Result<(), Box<dyn Error>> {
     let mut z = File::open("/dev/zfs").unwrap_or_else(|_| std::process::exit(0));
 
+    let (mut zc, mut buf) = zc_new();
+    ioctls::ZFS_IOC_POOL_CONFIGS.ioctl(&mut z, &mut zc).unwrap();
+    let nvbuf = &buf[0..zc.nvlist_dst_size as usize];
+
+    let mut i = nvpair::parser(nvbuf)?.iter();
+    let p = i.next();
+    println!("{:#?}", p);
+
+/*
     let configs = ioc_pool_configs(&mut z)?;
+    println!("{:#?}", configs);
 
     for pool in configs.list.pairs.keys() {
         let stats = ioc_objset_stats(&mut z, pool)?;
+        println!("{:#?}", stats);
         print_dataset(pool, stats)?;
         iter_dataset(&mut z, pool);
+
+        let props = ioc_pool_get_props(&mut z, pool)?;
+        println!("{:#?}", props);
     }
+*/
 
     Ok(())
 }
