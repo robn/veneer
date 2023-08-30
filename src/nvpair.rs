@@ -68,10 +68,25 @@ pub enum PairData {
 }
 
 #[derive(Debug)]
-pub struct Pair(CString,PairData);
+pub struct Pair(pub CString, pub PairData);
+
+impl From<Pair> for (CString,PairData) {
+    fn from(pair: Pair) -> Self {
+        (pair.0, pair.1)
+    }
+}
 
 #[derive(Debug)]
 pub struct List(Vec<Pair>);
+
+impl List {
+    pub fn pairs(&self) -> impl Iterator<Item=&Pair> {
+        self.0.iter()
+    }
+    pub fn keys(&self) -> impl Iterator<Item=&CStr> {
+        self.0.iter().map(|p| p.0.as_ref())
+    }
+}
 
 #[derive(Debug)]
 pub enum ParseError {
