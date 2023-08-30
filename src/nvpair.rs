@@ -221,7 +221,7 @@ impl Parser {
             return Ok((None, buf));
         }
 
-        let (buf, nbuf) = buf.split_at((len-4) as usize);
+        let (buf, mut nbuf) = buf.split_at((len-4) as usize);
 
         let (name_len, mut buf) = self.parse_int::<i16>(&buf)?;
         buf = &buf[2..]; // int16_t nvp_reserve
@@ -268,16 +268,22 @@ impl Parser {
             PairType::StringArray   => todo!(),
             PairType::HiResTime     => todo!(),
 
+            // embedded nvlists start at the "next" pair position, rather than at the "value"
+            // position of this pair. the real "next" pair follows after the nvlist
             PairType::NVList => {
-                let (l, nbuf) = self.parse_nvlist(&nbuf)?;
+                let mut pbuf = nbuf;
+                let (l, pbuf) = self.parse_nvlist(&pbuf)?;
+                nbuf = pbuf;
                 PairData::List(l)
             },
             PairType::NVListArray => {
                 let mut v = vec![];
+                let mut pbuf = nbuf;
                 for _ in 0..nelems {
-                    let (l, nbuf) = self.parse_nvlist(&nbuf)?;
+                    let (l, pbuf) = self.parse_nvlist(&pbuf)?;
                     v.push(l);
                 }
+                nbuf = pbuf;
                 PairData::ListArray(v)
             },
 
