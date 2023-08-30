@@ -216,7 +216,7 @@ impl Parser {
     }
 
     fn parse_pair<'a>(&'a self, buf: &'a [u8]) -> Result<(Option<Pair>,&[u8]),ParseError> {
-        let (len, buf) = self.parse_int::<u32>(&buf)?;
+        let (len, buf) = self.parse_int::<i32>(&buf)?;
         if len == 0 {
             return Ok((None, buf));
         }
