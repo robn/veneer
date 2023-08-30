@@ -280,7 +280,8 @@ impl Parser {
                 let mut v = vec![];
                 let mut pbuf = nbuf;
                 for _ in 0..nelems {
-                    let (l, pbuf) = self.parse_nvlist(&pbuf)?;
+                    let l;
+                    (l, pbuf) = self.parse_nvlist(&pbuf)?;
                     v.push(l);
                 }
                 nbuf = pbuf;
