@@ -3,12 +3,6 @@
 version = 3
 
 [[package]]
-name = "arrayvec"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -32,26 +26,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5ea5454021aef7a7056fa86185a2ce4425b010b8b8ff3aa04129ad08d3cf115"
 
 [[package]]
-name = "hexdump"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e40283dadb02f3af778878be1d717b17b4e4ab92e1d935ab03a730b0542905f2"
-dependencies = [
- "arrayvec",
- "itertools",
-]
-
-[[package]]
 name = "iocuddle"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8972d5be69940353d5347a1344cb375d9b457d6809b428b05bb1ca2fb9ce007"
 
 [[package]]
-name = "itertools"
-version = "0.4.19"
+name = "libc"
+version = "0.2.147"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4a9b56eb56058f43dc66e58f40a214b2ccbc9f3df51861b63d51dec7b65bc3f"
+checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 
 [[package]]
 name = "num-derive"
@@ -125,8 +109,8 @@ version = "0.1.0"
 dependencies = [
  "derivative",
  "desert",
- "hexdump",
  "iocuddle",
+ "libc",
  "num-derive",
  "num-traits",
 ]

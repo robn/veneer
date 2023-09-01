@@ -147,11 +147,12 @@ pub(crate) struct ZFSCommand {
     zoneid:             u64,
 }
 
+pub(crate) type ZFSIoctl<'a> = Ioctl<WriteRead, &'a ZFSCommand>;
+
 macro_rules! zfs_ioctl {
     ($name:ident, $id:expr) => {
 	#[allow(unused)]
-        pub(crate) const $name: Ioctl<WriteRead, &ZFSCommand> =
-            unsafe { Ioctl::classic($id) };
+        pub(crate) const $name: ZFSIoctl = unsafe { Ioctl::classic($id) };
     }
 }
 

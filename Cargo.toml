@@ -10,8 +10,8 @@ repository = "https://github.com/robn/veneer"
 
 [dependencies]
 derivative = "2.2.0"
-hexdump = "0.1.1"
 iocuddle = "0.1.1"
 num-traits = "0.2.16"
 num-derive = "0.4.0"
 desert = "2.0.1"
+libc = "0.2.147"
