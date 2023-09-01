@@ -14,8 +14,13 @@ use std::os::raw::{c_ulong, c_int, c_uint, c_void};
 const ZFS_MAX_DATASET_NAME_LEN: usize = 256;
 
 // include/os/linux/spl/sys/sysmacros.h
-const MAXNAMELEN: usize = 256;
-const MAXPATHLEN: usize = 4096;
+#[cfg(target_os="linux")] const MAXNAMELEN: usize = 256;
+#[cfg(target_os="linux")] const MAXPATHLEN: usize = 4096;
+
+// /usr/include/sys/syslimits.h
+// /usr/include/sys/param.h
+#[cfg(target_os="freebsd")] const MAXNAMELEN: usize = 256;
+#[cfg(target_os="freebsd")] const MAXPATHLEN: usize = 1024; // PATH_MAX
 
 // dmu_object_stats_t
 #[repr(C)]
@@ -152,9 +157,22 @@ extern "C" {
     fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
 }
 
+#[cfg(not(target_os="freebsd"))]
 pub(crate)
 fn zfs_ioctl(fd: &mut impl AsRawFd, req: c_ulong, zc: &mut ZFSCommand) -> Result<c_uint, IOError> {
     let r = unsafe { ioctl(fd.as_raw_fd(), 0x5a00+req, zc as *mut _, null::<c_void>()) };
+    r.try_into().map_err(|_| IOError::last_os_error())
+}
+
+#[cfg(target_os="freebsd")]
+pub(crate)
+fn zfs_ioctl(fd: &mut impl AsRawFd, req: c_ulong, zc: &mut ZFSCommand) -> Result<c_uint, IOError> {
+    #[repr(C)]
+    struct iocparm(u32, u64, u64);
+    let mut iocp = iocparm(15 as u32, zc as *mut ZFSCommand as u64, std::mem::size_of::<ZFSCommand>() as u64);
+    // _IOWR('Z', req, sizeof(iocparm))
+    let ncmd: c_ulong = 0xc0000000 + ((std::mem::size_of::<iocparm>() as c_ulong) << 16) + 0x5a00 + req;
+    let r = unsafe { ioctl(fd.as_raw_fd(), ncmd, &mut iocp as *mut _, null::<c_void>()) };
     r.try_into().map_err(|_| IOError::last_os_error())
 }
 
