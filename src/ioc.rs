@@ -9,7 +9,8 @@ use std::path::Path;
 use std::io::Result as IOResult;
 use std::error::Error;
 use std::ffi::{CStr, CString};
-use crate::sys::{self, ZFSCommand, ZFSIoctl};
+use std::os::raw::c_ulong;
+use crate::sys::{self, ZFSCommand};
 use crate::nvpair::{self, List as NVList};
 
 #[derive(Debug)]
@@ -60,33 +61,33 @@ impl Handle {
     }
 
     // helper: invoke the command
-    fn invoke(&mut self, ioctl: ZFSIoctl) -> IOCResult {
-        ioctl.ioctl(&mut self.dev, &mut self.cmd)?;
+    fn invoke(&mut self, req: c_ulong) -> IOCResult {
+        sys::zfs_ioctl(&mut self.dev, req, &mut self.cmd)?;
         Ok(())
     }
 
     // helper: invoke, explode the result nvlist and return it
-    fn invoke_nv(&mut self, ioctl: ZFSIoctl) -> IOCResultNV {
-        self.invoke(ioctl)?;
+    fn invoke_nv(&mut self, req: c_ulong) -> IOCResultNV {
+        self.invoke(req)?;
         let nvbuf = &self.buf[0..self.cmd.nvlist_dst_size as usize];
         Ok(nvpair::parse(nvbuf)?)
     }
 
     // helper: reset, setup named object, invoke, return nvlist
-    fn ioc_name_nv(&mut self, ioctl: ZFSIoctl, cname: &CStr) -> IOCResultNV {
+    fn ioc_name_nv(&mut self, req: c_ulong, cname: &CStr) -> IOCResultNV {
         self.reset();
         let name = cname.to_bytes_with_nul();
         self.cmd.name[..name.len()].copy_from_slice(&name);
-        self.invoke_nv(ioctl)
+        self.invoke_nv(req)
     }
 
     // helper: reset, setup named object+cookie, invoke, return name+nvlist+cookie
-    fn ioc_name_nv_cookie(&mut self, ioctl: ZFSIoctl, cname: &CStr, cookie: u64) -> IOCResultIter {
+    fn ioc_name_nv_cookie(&mut self, req: c_ulong, cname: &CStr, cookie: u64) -> IOCResultIter {
         self.reset();
         let name = cname.to_bytes_with_nul();
         self.cmd.name[..name.len()].copy_from_slice(&name);
         self.cmd.cookie = cookie;
-        let nvlist = self.invoke_nv(ioctl)?;
+        let nvlist = self.invoke_nv(req)?;
         Ok(IterState {
             name: CStr::from_bytes_until_nul(&self.cmd.name)?.into(),
             nvlist,

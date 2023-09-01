@@ -3,11 +3,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
-//
-use std::os::raw::c_int;
+
 use std::ptr::null;
 use derivative::Derivative;
-use iocuddle::{Ioctl, WriteRead};
+use std::io::Error as IOError;
+use std::os::fd::AsRawFd;
+use std::os::raw::{c_ulong, c_int, c_uint, c_void};
 
 // include/sys/fs/zfs.h
 const ZFS_MAX_DATASET_NAME_LEN: usize = 256;
@@ -147,97 +148,105 @@ pub(crate) struct ZFSCommand {
     zoneid:             u64,
 }
 
-pub(crate) type ZFSIoctl<'a> = Ioctl<WriteRead, &'a ZFSCommand>;
+extern "C" {
+    fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
+}
 
-macro_rules! zfs_ioctl {
+pub(crate)
+fn zfs_ioctl(fd: &mut impl AsRawFd, req: c_ulong, zc: &mut ZFSCommand) -> Result<c_uint, IOError> {
+    let r = unsafe { ioctl(fd.as_raw_fd(), 0x5a00+req, zc as *mut _, null::<c_void>()) };
+    r.try_into().map_err(|_| IOError::last_os_error())
+}
+
+macro_rules! ioc {
     ($name:ident, $id:expr) => {
-	#[allow(unused)]
-        pub(crate) const $name: ZFSIoctl = unsafe { Ioctl::classic($id) };
+        #[allow(unused)]
+        pub(crate) const $name: c_ulong = $id;
     }
 }
 
-zfs_ioctl!(ZFS_IOC_POOL_CREATE,             0x5a00);
-zfs_ioctl!(ZFS_IOC_POOL_DESTROY,            0x5a01);
-zfs_ioctl!(ZFS_IOC_POOL_IMPORT,             0x5a02);
-zfs_ioctl!(ZFS_IOC_POOL_EXPORT,             0x5a03);
-zfs_ioctl!(ZFS_IOC_POOL_CONFIGS,            0x5a04);
-zfs_ioctl!(ZFS_IOC_POOL_STATS,              0x5a05);
-zfs_ioctl!(ZFS_IOC_POOL_TRYIMPORT,          0x5a06);
-zfs_ioctl!(ZFS_IOC_POOL_SCAN,               0x5a07);
-zfs_ioctl!(ZFS_IOC_POOL_FREEZE,             0x5a08);
-zfs_ioctl!(ZFS_IOC_POOL_UPGRADE,            0x5a09);
-zfs_ioctl!(ZFS_IOC_POOL_GET_HISTORY,        0x5a0a);
-zfs_ioctl!(ZFS_IOC_VDEV_ADD,                0x5a0b);
-zfs_ioctl!(ZFS_IOC_VDEV_REMOVE,             0x5a0c);
-zfs_ioctl!(ZFS_IOC_VDEV_SET_STATE,          0x5a0d);
-zfs_ioctl!(ZFS_IOC_VDEV_ATTACH,             0x5a0e);
-zfs_ioctl!(ZFS_IOC_VDEV_DETACH,             0x5a0f);
-zfs_ioctl!(ZFS_IOC_VDEV_SETPATH,            0x5a10);
-zfs_ioctl!(ZFS_IOC_VDEV_SETFRU,             0x5a11);
-zfs_ioctl!(ZFS_IOC_OBJSET_STATS,            0x5a12);
-zfs_ioctl!(ZFS_IOC_OBJSET_ZPLPROPS,         0x5a13);
-zfs_ioctl!(ZFS_IOC_DATASET_LIST_NEXT,       0x5a14);
-zfs_ioctl!(ZFS_IOC_SNAPSHOT_LIST_NEXT,      0x5a15);
-zfs_ioctl!(ZFS_IOC_SET_PROP,                0x5a16);
-zfs_ioctl!(ZFS_IOC_CREATE,                  0x5a17);
-zfs_ioctl!(ZFS_IOC_DESTROY,                 0x5a18);
-zfs_ioctl!(ZFS_IOC_ROLLBACK,                0x5a19);
-zfs_ioctl!(ZFS_IOC_RENAME,                  0x5a1a);
-zfs_ioctl!(ZFS_IOC_RECV,                    0x5a1b);
-zfs_ioctl!(ZFS_IOC_SEND,                    0x5a1c);
-zfs_ioctl!(ZFS_IOC_INJECT_FAULT,            0x5a1d);
-zfs_ioctl!(ZFS_IOC_CLEAR_FAULT,             0x5a1e);
-zfs_ioctl!(ZFS_IOC_INJECT_LIST_NEXT,        0x5a1f);
-zfs_ioctl!(ZFS_IOC_ERROR_LOG,               0x5a20);
-zfs_ioctl!(ZFS_IOC_CLEAR,                   0x5a21);
-zfs_ioctl!(ZFS_IOC_PROMOTE,                 0x5a22);
-zfs_ioctl!(ZFS_IOC_SNAPSHOT,                0x5a23);
-zfs_ioctl!(ZFS_IOC_DSOBJ_TO_DSNAME,         0x5a24);
-zfs_ioctl!(ZFS_IOC_OBJ_TO_PATH,             0x5a25);
-zfs_ioctl!(ZFS_IOC_POOL_SET_PROPS,          0x5a26);
-zfs_ioctl!(ZFS_IOC_POOL_GET_PROPS,          0x5a27);
-zfs_ioctl!(ZFS_IOC_SET_FSACL,               0x5a28);
-zfs_ioctl!(ZFS_IOC_GET_FSACL,               0x5a29);
-zfs_ioctl!(ZFS_IOC_SHARE,                   0x5a2a);
-zfs_ioctl!(ZFS_IOC_INHERIT_PROP,            0x5a2b);
-zfs_ioctl!(ZFS_IOC_SMB_ACL,                 0x5a2c);
-zfs_ioctl!(ZFS_IOC_USERSPACE_ONE,           0x5a2d);
-zfs_ioctl!(ZFS_IOC_USERSPACE_MANY,          0x5a2e);
-zfs_ioctl!(ZFS_IOC_USERSPACE_UPGRADE,       0x5a2f);
-zfs_ioctl!(ZFS_IOC_HOLD,                    0x5a30);
-zfs_ioctl!(ZFS_IOC_RELEASE,                 0x5a31);
-zfs_ioctl!(ZFS_IOC_GET_HOLDS,               0x5a32);
-zfs_ioctl!(ZFS_IOC_OBJSET_RECVD_PROPS,      0x5a33);
-zfs_ioctl!(ZFS_IOC_VDEV_SPLIT,              0x5a34);
-zfs_ioctl!(ZFS_IOC_NEXT_OBJ,                0x5a35);
-zfs_ioctl!(ZFS_IOC_DIFF,                    0x5a36);
-zfs_ioctl!(ZFS_IOC_TMP_SNAPSHOT,            0x5a37);
-zfs_ioctl!(ZFS_IOC_OBJ_TO_STATS,            0x5a38);
-zfs_ioctl!(ZFS_IOC_SPACE_WRITTEN,           0x5a39);
-zfs_ioctl!(ZFS_IOC_SPACE_SNAPS,             0x5a3a);
-zfs_ioctl!(ZFS_IOC_DESTROY_SNAPS,           0x5a3b);
-zfs_ioctl!(ZFS_IOC_POOL_REGUID,             0x5a3c);
-zfs_ioctl!(ZFS_IOC_POOL_REOPEN,             0x5a3d);
-zfs_ioctl!(ZFS_IOC_SEND_PROGRESS,           0x5a3e);
-zfs_ioctl!(ZFS_IOC_LOG_HISTORY,             0x5a3f);
-zfs_ioctl!(ZFS_IOC_SEND_NEW,                0x5a40);
-zfs_ioctl!(ZFS_IOC_SEND_SPACE,              0x5a41);
-zfs_ioctl!(ZFS_IOC_CLONE,                   0x5a42);
-zfs_ioctl!(ZFS_IOC_BOOKMARK,                0x5a43);
-zfs_ioctl!(ZFS_IOC_GET_BOOKMARKS,           0x5a44);
-zfs_ioctl!(ZFS_IOC_DESTROY_BOOKMARKS,       0x5a45);
-zfs_ioctl!(ZFS_IOC_RECV_NEW,                0x5a46);
-zfs_ioctl!(ZFS_IOC_POOL_SYNC,               0x5a47);
-zfs_ioctl!(ZFS_IOC_CHANNEL_PROGRAM,         0x5a48);
-zfs_ioctl!(ZFS_IOC_LOAD_KEY,                0x5a49);
-zfs_ioctl!(ZFS_IOC_UNLOAD_KEY,              0x5a4a);
-zfs_ioctl!(ZFS_IOC_CHANGE_KEY,              0x5a4b);
-zfs_ioctl!(ZFS_IOC_REMAP,                   0x5a4c);
-zfs_ioctl!(ZFS_IOC_POOL_CHECKPOINT,         0x5a4d);
-zfs_ioctl!(ZFS_IOC_POOL_DISCARD_CHECKPOINT, 0x5a4e);
-zfs_ioctl!(ZFS_IOC_POOL_INITIALIZE,         0x5a4f);
-zfs_ioctl!(ZFS_IOC_POOL_TRIM,               0x5a50);
-zfs_ioctl!(ZFS_IOC_REDACT,                  0x5a51);
-zfs_ioctl!(ZFS_IOC_GET_BOOKMARK_PROPS,      0x5a52);
-zfs_ioctl!(ZFS_IOC_WAIT,                    0x5a53);
-zfs_ioctl!(ZFS_IOC_WAIT_FS,                 0x5a54);
+ioc!(ZFS_IOC_POOL_CREATE,             0x00);
+ioc!(ZFS_IOC_POOL_DESTROY,            0x01);
+ioc!(ZFS_IOC_POOL_IMPORT,             0x02);
+ioc!(ZFS_IOC_POOL_EXPORT,             0x03);
+ioc!(ZFS_IOC_POOL_CONFIGS,            0x04);
+ioc!(ZFS_IOC_POOL_STATS,              0x05);
+ioc!(ZFS_IOC_POOL_TRYIMPORT,          0x06);
+ioc!(ZFS_IOC_POOL_SCAN,               0x07);
+ioc!(ZFS_IOC_POOL_FREEZE,             0x08);
+ioc!(ZFS_IOC_POOL_UPGRADE,            0x09);
+ioc!(ZFS_IOC_POOL_GET_HISTORY,        0x0a);
+ioc!(ZFS_IOC_VDEV_ADD,                0x0b);
+ioc!(ZFS_IOC_VDEV_REMOVE,             0x0c);
+ioc!(ZFS_IOC_VDEV_SET_STATE,          0x0d);
+ioc!(ZFS_IOC_VDEV_ATTACH,             0x0e);
+ioc!(ZFS_IOC_VDEV_DETACH,             0x0f);
+ioc!(ZFS_IOC_VDEV_SETPATH,            0x10);
+ioc!(ZFS_IOC_VDEV_SETFRU,             0x11);
+ioc!(ZFS_IOC_OBJSET_STATS,            0x12);
+ioc!(ZFS_IOC_OBJSET_ZPLPROPS,         0x13);
+ioc!(ZFS_IOC_DATASET_LIST_NEXT,       0x14);
+ioc!(ZFS_IOC_SNAPSHOT_LIST_NEXT,      0x15);
+ioc!(ZFS_IOC_SET_PROP,                0x16);
+ioc!(ZFS_IOC_CREATE,                  0x17);
+ioc!(ZFS_IOC_DESTROY,                 0x18);
+ioc!(ZFS_IOC_ROLLBACK,                0x19);
+ioc!(ZFS_IOC_RENAME,                  0x1a);
+ioc!(ZFS_IOC_RECV,                    0x1b);
+ioc!(ZFS_IOC_SEND,                    0x1c);
+ioc!(ZFS_IOC_INJECT_FAULT,            0x1d);
+ioc!(ZFS_IOC_CLEAR_FAULT,             0x1e);
+ioc!(ZFS_IOC_INJECT_LIST_NEXT,        0x1f);
+ioc!(ZFS_IOC_ERROR_LOG,               0x20);
+ioc!(ZFS_IOC_CLEAR,                   0x21);
+ioc!(ZFS_IOC_PROMOTE,                 0x22);
+ioc!(ZFS_IOC_SNAPSHOT,                0x23);
+ioc!(ZFS_IOC_DSOBJ_TO_DSNAME,         0x24);
+ioc!(ZFS_IOC_OBJ_TO_PATH,             0x25);
+ioc!(ZFS_IOC_POOL_SET_PROPS,          0x26);
+ioc!(ZFS_IOC_POOL_GET_PROPS,          0x27);
+ioc!(ZFS_IOC_SET_FSACL,               0x28);
+ioc!(ZFS_IOC_GET_FSACL,               0x29);
+ioc!(ZFS_IOC_SHARE,                   0x2a);
+ioc!(ZFS_IOC_INHERIT_PROP,            0x2b);
+ioc!(ZFS_IOC_SMB_ACL,                 0x2c);
+ioc!(ZFS_IOC_USERSPACE_ONE,           0x2d);
+ioc!(ZFS_IOC_USERSPACE_MANY,          0x2e);
+ioc!(ZFS_IOC_USERSPACE_UPGRADE,       0x2f);
+ioc!(ZFS_IOC_HOLD,                    0x30);
+ioc!(ZFS_IOC_RELEASE,                 0x31);
+ioc!(ZFS_IOC_GET_HOLDS,               0x32);
+ioc!(ZFS_IOC_OBJSET_RECVD_PROPS,      0x33);
+ioc!(ZFS_IOC_VDEV_SPLIT,              0x34);
+ioc!(ZFS_IOC_NEXT_OBJ,                0x35);
+ioc!(ZFS_IOC_DIFF,                    0x36);
+ioc!(ZFS_IOC_TMP_SNAPSHOT,            0x37);
+ioc!(ZFS_IOC_OBJ_TO_STATS,            0x38);
+ioc!(ZFS_IOC_SPACE_WRITTEN,           0x39);
+ioc!(ZFS_IOC_SPACE_SNAPS,             0x3a);
+ioc!(ZFS_IOC_DESTROY_SNAPS,           0x3b);
+ioc!(ZFS_IOC_POOL_REGUID,             0x3c);
+ioc!(ZFS_IOC_POOL_REOPEN,             0x3d);
+ioc!(ZFS_IOC_SEND_PROGRESS,           0x3e);
+ioc!(ZFS_IOC_LOG_HISTORY,             0x3f);
+ioc!(ZFS_IOC_SEND_NEW,                0x40);
+ioc!(ZFS_IOC_SEND_SPACE,              0x41);
+ioc!(ZFS_IOC_CLONE,                   0x42);
+ioc!(ZFS_IOC_BOOKMARK,                0x43);
+ioc!(ZFS_IOC_GET_BOOKMARKS,           0x44);
+ioc!(ZFS_IOC_DESTROY_BOOKMARKS,       0x45);
+ioc!(ZFS_IOC_RECV_NEW,                0x46);
+ioc!(ZFS_IOC_POOL_SYNC,               0x47);
+ioc!(ZFS_IOC_CHANNEL_PROGRAM,         0x48);
+ioc!(ZFS_IOC_LOAD_KEY,                0x49);
+ioc!(ZFS_IOC_UNLOAD_KEY,              0x4a);
+ioc!(ZFS_IOC_CHANGE_KEY,              0x4b);
+ioc!(ZFS_IOC_REMAP,                   0x4c);
+ioc!(ZFS_IOC_POOL_CHECKPOINT,         0x4d);
+ioc!(ZFS_IOC_POOL_DISCARD_CHECKPOINT, 0x4e);
+ioc!(ZFS_IOC_POOL_INITIALIZE,         0x4f);
+ioc!(ZFS_IOC_POOL_TRIM,               0x50);
+ioc!(ZFS_IOC_REDACT,                  0x51);
+ioc!(ZFS_IOC_GET_BOOKMARK_PROPS,      0x52);
+ioc!(ZFS_IOC_WAIT,                    0x53);
+ioc!(ZFS_IOC_WAIT_FS,                 0x54);

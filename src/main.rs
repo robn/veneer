@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 },
                 Err(e) => {
                     let ioe = e.downcast::<IOError>()?;
-                    ioe.raw_os_error().filter(|n| *n == libc::ESRCH).ok_or(ioe)?;
+                    ioe.raw_os_error().filter(|n| *n == 3).ok_or(ioe)?; // ESRCH
                 },
             }
         }
