@@ -229,8 +229,8 @@ impl Parser {
 
         let (buf, mut nbuf) = buf.split_at((len-4) as usize);
 
-        let (name_len, mut buf) = self.parse_int::<i16>(&buf)?;
-        buf = &buf[2..]; // int16_t nvp_reserve
+        let (_, buf) = self.parse_int::<i16>(&buf)?; // name_len
+        let (_, buf) = self.parse_int::<i16>(&buf)?; // nvp_reserve
 
         let (nelems, buf) = self.parse_int::<i32>(&buf)?;
         let (ityp, buf) = self.parse_int::<i32>(&buf)?;
