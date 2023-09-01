@@ -14,7 +14,7 @@ const MAXPATHLEN: usize = 4096;
 #[repr(C)]
 #[derive(Derivative,Debug)]
 #[derivative(Default)]
-pub struct DMUObjectStats {
+pub(crate) struct DMUObjectStats {
     num_clones:     u64,
     creation_txg:   u64,
     guid:           u64,
@@ -30,7 +30,7 @@ pub struct DMUObjectStats {
 #[repr(C)]
 #[derive(Derivative,Debug)]
 #[derivative(Default)]
-pub struct DMUReplayRecordBegin {
+pub(crate) struct DMUReplayRecordBegin {
     magic:          u64,
     versioninfo:    u64,
     creation_time:  u64,
@@ -46,7 +46,7 @@ pub struct DMUReplayRecordBegin {
 #[repr(C)]
 #[derive(Derivative,Debug)]
 #[derivative(Default)]
-pub struct ZInjectRecord {
+pub(crate) struct ZInjectRecord {
     objset:     u64,
     object:     u64,
     start:      u64,
@@ -70,7 +70,7 @@ pub struct ZInjectRecord {
 // zfs_share_t
 #[repr(C)]
 #[derive(Default,Debug)]
-pub struct Share {
+pub(crate) struct ZFSShare {
     exportdata: u64,
     sharedata:  u64,
     sharetype:  u64,
@@ -81,7 +81,7 @@ pub struct Share {
 #[repr(C)]
 #[derive(Derivative,Debug)]
 #[derivative(Default)]
-pub struct Stat {
+pub(crate) struct ZFSStat {
     gen:    u64,
     mode:   u64,
     links:  u64,
@@ -93,7 +93,7 @@ pub struct Stat {
 #[repr(C)]
 #[derive(Derivative,Debug)]
 #[derivative(Default)]
-pub struct Command {
+pub(crate) struct ZFSCommand {
     // nvlist-based
     #[derivative(Default(value="[0; MAXPATHLEN]"))]
     pub name:               [u8; MAXPATHLEN],
@@ -123,7 +123,7 @@ pub struct Command {
     history_offset:     u64,
     obj:                u64,
     iflags:             u64,
-    share:              Share,
+    share:              ZFSShare,
     objset_stats:       DMUObjectStats,
     begin_record:       DMUReplayRecordBegin,
     inject_record:      ZInjectRecord,
@@ -137,14 +137,14 @@ pub struct Command {
     sendobj:            u64,
     fromobj:            u64,
     createtxg:          u64,
-    stat:               Stat,
+    stat:               ZFSStat,
     zoneid:             u64,
 }
 
 macro_rules! zfs_ioctl {
     ($name:ident, $id:expr) => {
 	#[allow(unused)]
-        pub const $name: Ioctl<WriteRead, &Command> =
+        pub(crate) const $name: Ioctl<WriteRead, &ZFSCommand> =
             unsafe { Ioctl::classic($id) };
     }
 }
