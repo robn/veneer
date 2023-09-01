@@ -264,8 +264,10 @@ impl Parser {
 
             PairType::UInt64Array   => {
                 let mut v = vec![];
-                for elem in 0..nelems {
-                    let (n, buf) = self.parse_int::<u64>(&buf)?;
+                let mut pbuf = buf;
+                for _ in 0..nelems {
+                    let n;
+                    (n, pbuf) = self.parse_int::<u64>(&pbuf)?;
                     v.push(n);
                 }
                 PairData::UInt64Array(v)
@@ -277,8 +279,7 @@ impl Parser {
             // embedded nvlists start at the "next" pair position, rather than at the "value"
             // position of this pair. the real "next" pair follows after the nvlist
             PairType::NVList => {
-                let mut pbuf = nbuf;
-                let (l, pbuf) = self.parse_nvlist(&pbuf)?;
+                let (l, pbuf) = self.parse_nvlist(&nbuf)?;
                 nbuf = pbuf;
                 PairData::List(l)
             },
