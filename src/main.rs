@@ -4,9 +4,9 @@
 
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
-mod sys;
 pub mod ioc;
 mod nvpair;
+mod sys;
 
 use std::error::Error;
 use std::ffi::CString;
@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{:#?}", stats);
         */
 
-        let mut stack: Vec<(CString,u64)> = vec![(pool.into(), 0)];
+        let mut stack: Vec<(CString, u64)> = vec![(pool.into(), 0)];
         while let Some((name, cookie)) = stack.pop() {
             match ioc.dataset_list_next(&name, cookie) {
                 Ok(is) => {
@@ -52,11 +52,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let name = is.name.into();
                     println!("{:?}", name);
                     stack.push((name, 0));
-                },
+                }
                 Err(e) => {
                     let ioe = e.downcast::<IOError>()?;
                     ioe.raw_os_error().filter(|n| *n == 3).ok_or(ioe)?; // ESRCH
-                },
+                }
             }
         }
     }

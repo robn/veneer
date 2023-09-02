@@ -4,14 +4,14 @@
 
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
-use std::fs::File;
-use std::path::Path;
-use std::io::Result as IOResult;
+use crate::nvpair::{self, List as NVList};
+use crate::sys::{self, ZFSCommand};
 use std::error::Error;
 use std::ffi::{CStr, CString};
+use std::fs::File;
+use std::io::Result as IOResult;
 use std::os::raw::c_ulong;
-use crate::sys::{self, ZFSCommand};
-use crate::nvpair::{self, List as NVList};
+use std::path::Path;
 
 #[derive(Debug)]
 pub struct Handle {
@@ -32,7 +32,6 @@ type IOCResultNV = Result<NVList, Box<dyn Error>>;
 type IOCResultIter = Result<IterState, Box<dyn Error>>;
 
 impl Handle {
-
     // open the control device node. you only need this if its not on /dev/zfs
     pub fn open_dev<P: AsRef<Path>>(path: P) -> IOResult<Handle> {
         Ok(Handle {
@@ -46,7 +45,6 @@ impl Handle {
     pub fn open() -> IOResult<Handle> {
         Handle::open_dev("/dev/zfs")
     }
-
 
     // most of the zfs ioctls have a common form: fill out a couple of details
     // inside the (enormous, mostly obsolete) command structure, submit it,
@@ -95,7 +93,6 @@ impl Handle {
         })
     }
 
-
     // global ioctls
 
     // get top-level config for all pools (like label contents or zpool.cache)
@@ -103,7 +100,6 @@ impl Handle {
         self.reset();
         self.invoke_nv(sys::ZFS_IOC_POOL_CONFIGS)
     }
-
 
     // per-pool ioctls
 
@@ -117,14 +113,12 @@ impl Handle {
         self.ioc_name_nv(sys::ZFS_IOC_POOL_GET_PROPS, pool)
     }
 
-
     // per-dataset ioctls
 
     // get dataset properties (like zfs get)
     pub fn objset_stats(&mut self, objset: &CStr) -> IOCResultNV {
         self.ioc_name_nv(sys::ZFS_IOC_OBJSET_STATS, objset)
     }
-
 
     // dataset iterator ioctls
     pub fn dataset_list_next(&mut self, dataset: &CStr, cookie: u64) -> IOCResultIter {
