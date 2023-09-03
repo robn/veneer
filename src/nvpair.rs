@@ -43,7 +43,7 @@ enum PairType {
 }
 
 #[derive(Debug)]
-pub enum PairData {
+pub enum PairValue {
     Boolean,
     Byte(u8),
     Int16(i16),
@@ -62,8 +62,8 @@ pub enum PairData {
     UInt64Array(Vec<u64>),
     StringArray(Vec<CString>),
     HiResTime(i64), // XXX hrtime_t -> longlong_t -> i64
-    List(List),
-    ListArray(Vec<List>),
+    List(PairList),
+    ListArray(Vec<PairList>),
     BooleanValue(bool),
     Int8(i8),
     UInt8(u8),
@@ -76,16 +76,16 @@ pub enum PairData {
 #[derive(Debug)]
 pub struct Pair(pub CString, pub PairData);
 
-impl From<Pair> for (CString, PairData) {
+impl From<Pair> for (CString, PairValue) {
     fn from(pair: Pair) -> Self {
         (pair.0, pair.1)
     }
 }
 
 #[derive(Debug)]
-pub struct List(Vec<Pair>);
+pub struct PairList(Vec<Pair>);
 
-impl List {
+impl PairList {
     pub fn pairs(&self) -> impl Iterator<Item = &Pair> {
         self.0.iter()
     }
@@ -152,7 +152,7 @@ fn align(n: usize) -> usize {
     (n + 7) & !7
 }
 
-pub fn parse<R: Read>(mut r: R) -> Result<List, ParseError> {
+pub fn parse<R: Read>(mut r: R) -> Result<PairList, ParseError> {
     let mut buf: Vec<u8> = vec![];
     r.read_to_end(&mut buf)?;
     Parser::new().parse(&buf)
@@ -163,7 +163,7 @@ impl Parser {
         Parser
     }
 
-    fn parse<'a>(&'a self, buf: &'a [u8]) -> Result<List, ParseError> {
+    fn parse<'a>(&'a self, buf: &'a [u8]) -> Result<PairList, ParseError> {
         let encoding = match buf[0] {
             0 => Encoding::Native,
             1 => Encoding::XDR,
@@ -208,7 +208,7 @@ impl Parser {
         Ok((cstr.into(), &buf[s..]))
     }
 
-    fn parse_nvlist<'a>(&'a self, buf: &'a [u8]) -> Result<(List, &[u8]), ParseError> {
+    fn parse_nvlist<'a>(&'a self, buf: &'a [u8]) -> Result<(PairList, &[u8]), ParseError> {
         let mut pairs = vec![];
         let mut nbuf = buf;
         loop {
@@ -217,7 +217,7 @@ impl Parser {
                     pairs.push(pair);
                     buf
                 }
-                (None, buf) => return Ok((List(pairs), buf)),
+                (None, buf) => return Ok((PairList(pairs), buf)),
             }
         }
     }
@@ -244,7 +244,7 @@ impl Parser {
         //println!("name {:?} nelems {:?} typ {:?}", name, nelems, typ);
 
         let data = match typ {
-            PairType::Boolean => PairData::Boolean,
+            PairType::Boolean => PairValue::Boolean,
 
             PairType::Byte => todo!(),
             PairType::Int16 => todo!(),
@@ -253,8 +253,8 @@ impl Parser {
             PairType::UInt32 => todo!(),
             PairType::Int64 => todo!(),
 
-            PairType::UInt64 => PairData::UInt64(self.parse_int::<u64>(&buf)?.0),
-            PairType::String => PairData::String(self.parse_string(&buf)?.0),
+            PairType::UInt64 => PairValue::UInt64(self.parse_int::<u64>(&buf)?.0),
+            PairType::String => PairValue::String(self.parse_string(&buf)?.0),
 
             PairType::ByteArray => todo!(),
             PairType::Int16Array => todo!(),
@@ -271,7 +271,7 @@ impl Parser {
                     (n, pbuf) = self.parse_int::<u64>(&pbuf)?;
                     v.push(n);
                 }
-                PairData::UInt64Array(v)
+                PairValue::UInt64Array(v)
             }
 
             PairType::StringArray => todo!(),
@@ -282,7 +282,7 @@ impl Parser {
             PairType::NVList => {
                 let (l, pbuf) = self.parse_nvlist(&nbuf)?;
                 nbuf = pbuf;
-                PairData::List(l)
+                PairValue::List(l)
             }
             PairType::NVListArray => {
                 let mut v = vec![];
@@ -293,7 +293,7 @@ impl Parser {
                     v.push(l);
                 }
                 nbuf = pbuf;
-                PairData::ListArray(v)
+                PairValue::ListArray(v)
             }
 
             PairType::BooleanValue => todo!(),
