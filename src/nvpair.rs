@@ -101,6 +101,15 @@ impl PairList {
     pub fn keys(&self) -> impl Iterator<Item = &CStr> {
         self.0.iter().map(|p| p.0.as_ref())
     }
+
+    pub fn get<T>(&self, t: T) -> Option<&Pair>
+    where
+        T: Into<Vec<u8>>,
+    {
+        CString::new(t)
+            .ok()
+            .and_then(|key| self.pairs().filter(|p| p.0 == key).next())
+    }
 }
 
 #[derive(Debug)]
