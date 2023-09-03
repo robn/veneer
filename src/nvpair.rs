@@ -89,6 +89,19 @@ impl Pair {
     pub fn value(&self) -> &PairValue {
         &self.1
     }
+
+    pub fn as_list(&self) -> Option<&PairList> {
+        match self.1 {
+            PairValue::List(ref l) => Some(l),
+            _ => None,
+        }
+    }
+    pub fn as_u64_slice(&self) -> Option<&[u64]> {
+        match self.1 {
+            PairValue::UInt64Array(ref s) => Some(s),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug)]
