@@ -13,3 +13,7 @@ derivative = "2.2.0"
 num-traits = "0.2.16"
 num-derive = "0.4.0"
 desert = "2.0.1"
+
+[dev-dependencies]
+crossterm = "0.27.0"
+ratatui = "0.23.0"
