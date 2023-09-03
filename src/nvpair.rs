@@ -74,11 +74,20 @@ pub enum PairValue {
 }
 
 #[derive(Debug)]
-pub struct Pair(pub CString, pub PairData);
+pub struct Pair(CString, PairValue);
 
 impl From<Pair> for (CString, PairValue) {
     fn from(pair: Pair) -> Self {
         (pair.0, pair.1)
+    }
+}
+
+impl Pair {
+    pub fn key(&self) -> &CStr {
+        self.0.as_c_str()
+    }
+    pub fn value(&self) -> &PairValue {
+        &self.1
     }
 }
 
