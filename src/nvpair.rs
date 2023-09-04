@@ -5,6 +5,7 @@
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
 use desert::FromBytesLE;
+use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use std::ffi::{CStr, CString};
 use std::fmt;
