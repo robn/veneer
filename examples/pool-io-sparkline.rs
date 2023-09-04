@@ -18,71 +18,7 @@ use std::ffi::CStr;
 use std::iter;
 use std::time::{Duration, Instant};
 use veneer::ioc;
-
-// XXX this and other structures like it in fs/zfs.h can be extended with
-//     new versions, but not reduced. so we need to initialise to zero, and
-//     make sure we don't overrun, but its ok to come up short
-
-// vdev_stat_t
-#[repr(C)]
-#[derive(Debug, Default)]
-struct VdevStats {
-    timestamp: u64, // hrtime_t
-    state: u64,     // vdev_state_t
-    aux: u64,       // vdev_aux_t
-    alloc: u64,
-    space: u64,
-    dspace: u64,
-    rsize: u64,
-    esize: u64,
-    ops: [u64; 6],   // VS_ZIO_TYPES
-    bytes: [u64; 6], // VS_ZIO_TYPES
-    read_errors: u64,
-    write_errors: u64,
-    checksum_errors: u64,
-    initialize_errors: u64,
-    self_healed: u64,
-    scan_removing: u64,
-    scan_processed: u64,
-    fragmentation: u64,
-    initialize_bytes_done: u64,
-    initialize_bytes_est: u64,
-    initialize_state: u64,       // vdev_initializing_state_t
-    initialize_action_time: u64, // time_t
-    checkpoint_space: u64,
-    resilver_deferred: u64,
-    slow_ios: u64,
-    trim_errors: u64,
-    trim_notsup: u64,
-    trim_bytes_done: u64,
-    trim_bytes_est: u64,
-    trim_state: u64,       // vdev_trim_state_t
-    trim_action_time: u64, // time_t
-    rebuild_processed: u64,
-    configured_ashift: u64,
-    logical_ashift: u64,
-    physical_ashift: u64,
-    noalloc: u64,
-    pspace: u64,
-}
-
-impl From<&[u64]> for VdevStats {
-    fn from(s: &[u64]) -> Self {
-        let count = std::cmp::min(
-            s.len(),
-            std::mem::size_of::<VdevStats>() / std::mem::size_of::<u64>(),
-        );
-        let mut vs = VdevStats::default();
-        unsafe {
-            std::ptr::copy_nonoverlapping(
-                s.as_ptr(),
-                std::ptr::addr_of_mut!(vs) as *mut u64,
-                count,
-            );
-        }
-        vs
-    }
-}
+use veneer::nvtypes::VdevStats;
 
 fn get_stats(ioc: &mut ioc::Handle, pool: &CStr) -> Result<(u64, u64), Box<dyn Error>> {
     let stats = ioc.pool_stats(pool)?;

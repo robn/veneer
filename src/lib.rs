@@ -6,6 +6,7 @@
 
 pub mod ioc;
 mod nvpair;
+pub mod nvtypes;
 mod sys;
 
 #[macro_use]
