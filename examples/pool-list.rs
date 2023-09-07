@@ -4,17 +4,14 @@
 
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
-// XXX convert to high-level api, when we have one
-
 use std::error::Error;
-use veneer::ioc;
+use veneer::zfs;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut ioc = ioc::Handle::open()?;
+    let mut z = zfs::open()?;
 
-    let configs = ioc.pool_configs()?;
-    for pool in configs.keys() {
-        println!("{:?}", pool);
+    for pool in z.pools()? {
+        println!("{}", pool.name());
     }
 
     Ok(())

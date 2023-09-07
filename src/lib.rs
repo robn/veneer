@@ -8,3 +8,5 @@ pub mod ioc;
 mod nvpair;
 pub mod nvtypes;
 mod sys;
+mod util;
+pub mod zfs;
