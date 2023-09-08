@@ -9,18 +9,11 @@ use crate::nvpair::PairList;
 use crate::util::AutoString;
 use std::cell::{OnceCell, RefCell};
 use std::error::Error;
-use std::ffi::CStr;
+use std::rc::Rc;
 
-pub struct Handle {
+struct Handle {
     ioc: RefCell<ioc::Handle>,
     config: OnceCell<PairList>,
-}
-
-pub fn open() -> Result<Handle, Box<dyn Error>> {
-    Ok(Handle {
-        ioc: RefCell::new(ioc::Handle::open()?),
-        config: OnceCell::default(),
-    })
 }
 
 impl Handle {
@@ -36,21 +29,38 @@ impl Handle {
 
         Ok(self.config.get().unwrap())
     }
+}
 
+pub struct Root(Rc<Handle>);
+
+pub fn open() -> Result<Root, Box<dyn Error>> {
+    let h = Handle {
+        ioc: RefCell::new(ioc::Handle::open()?),
+        config: OnceCell::default(),
+    };
+    Ok(Root(Rc::new(h)))
+}
+
+impl Root {
     pub fn pools(&self) -> Result<Vec<Pool>, Box<dyn Error>> {
-        Ok(self.get_config()?.keys().map(|p| Pool::new(p)).collect())
+        Ok(self
+            .0
+            .get_config()?
+            .keys()
+            .map(|p| Pool {
+                handle: self.0.clone(),
+                name: p.into(),
+            })
+            .collect())
     }
 }
 
 pub struct Pool {
+    handle: Rc<Handle>,
     name: AutoString,
 }
 
 impl Pool {
-    fn new(name: &CStr) -> Pool {
-        Pool { name: name.into() }
-    }
-
     pub fn name(&self) -> String {
         self.name.to_string()
     }
