@@ -7,30 +7,34 @@
 use crate::ioc;
 use crate::nvpair::PairList;
 use crate::util::AutoString;
+use std::cell::OnceCell;
 use std::error::Error;
 use std::ffi::CStr;
 
 pub struct Handle {
     ioc: ioc::Handle,
-    config: Option<PairList>,
+    config: OnceCell<PairList>,
 }
 
 pub fn open() -> Result<Handle, Box<dyn Error>> {
     Ok(Handle {
         ioc: ioc::Handle::open()?,
-        config: None,
+        config: OnceCell::default(),
     })
 }
 
 impl Handle {
     fn get_config(&mut self) -> Result<&PairList, Box<dyn Error>> {
-        match self.config {
-            Some(ref pl) => Ok(pl),
-            None => {
-                self.config = Some(self.ioc.pool_configs()?);
-                Ok(self.config.as_ref().unwrap())
-            }
+        // XXX get_or_try_init [feature "once_cell_try"] would be better
+        //self.config.get_or_try_init(|| self.ioc.pool_configs()?);
+        if let Some(c) = self.config.get() {
+            return Ok(c);
         }
+
+        let c = self.ioc.pool_configs()?;
+        let _ = self.config.set(c);
+
+        Ok(self.config.get().unwrap())
     }
 
     pub fn pools(&mut self) -> Result<Vec<Pool>, Box<dyn Error>> {
