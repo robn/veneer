@@ -7,37 +7,37 @@
 use crate::ioc;
 use crate::nvpair::PairList;
 use crate::util::AutoString;
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
 use std::error::Error;
 use std::ffi::CStr;
 
 pub struct Handle {
-    ioc: ioc::Handle,
+    ioc: RefCell<ioc::Handle>,
     config: OnceCell<PairList>,
 }
 
 pub fn open() -> Result<Handle, Box<dyn Error>> {
     Ok(Handle {
-        ioc: ioc::Handle::open()?,
+        ioc: RefCell::new(ioc::Handle::open()?),
         config: OnceCell::default(),
     })
 }
 
 impl Handle {
-    fn get_config(&mut self) -> Result<&PairList, Box<dyn Error>> {
+    fn get_config(&self) -> Result<&PairList, Box<dyn Error>> {
         // XXX get_or_try_init [feature "once_cell_try"] would be better
-        //self.config.get_or_try_init(|| self.ioc.pool_configs()?);
+        //self.config.get_or_try_init(|| self.ioc.borrow_mut().pool_configs()?);
         if let Some(c) = self.config.get() {
             return Ok(c);
         }
 
-        let c = self.ioc.pool_configs()?;
+        let c = self.ioc.borrow_mut().pool_configs()?;
         let _ = self.config.set(c);
 
         Ok(self.config.get().unwrap())
     }
 
-    pub fn pools(&mut self) -> Result<Vec<Pool>, Box<dyn Error>> {
+    pub fn pools(&self) -> Result<Vec<Pool>, Box<dyn Error>> {
         Ok(self.get_config()?.keys().map(|p| Pool::new(p)).collect())
     }
 }

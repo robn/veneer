@@ -8,7 +8,7 @@ use std::error::Error;
 use veneer::zfs;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut z = zfs::open()?;
+    let z = zfs::open()?;
 
     for pool in z.pools()? {
         println!("{}", pool.name());
