@@ -17,6 +17,13 @@ struct Handle {
 }
 
 impl Handle {
+    fn open() -> Result<Handle, Box<dyn Error>> {
+        Ok(Handle {
+            ioc: RefCell::new(ioc::Handle::open()?),
+            config: OnceCell::default(),
+        })
+    }
+
     fn get_config(&self) -> Result<&PairList, Box<dyn Error>> {
         // XXX get_or_try_init [feature "once_cell_try"] would be better
         //self.config.get_or_try_init(|| self.ioc.borrow_mut().pool_configs()?);
@@ -34,23 +41,20 @@ impl Handle {
 pub struct Root(Rc<Handle>);
 
 pub fn open() -> Result<Root, Box<dyn Error>> {
-    let h = Handle {
-        ioc: RefCell::new(ioc::Handle::open()?),
-        config: OnceCell::default(),
-    };
-    Ok(Root(Rc::new(h)))
+    Root::open()
 }
 
 impl Root {
+    fn open() -> Result<Root, Box<dyn Error>> {
+        Ok(Root(Rc::new(Handle::open()?)))
+    }
+
     pub fn pools(&self) -> Result<Vec<Pool>, Box<dyn Error>> {
         Ok(self
             .0
             .get_config()?
             .keys()
-            .map(|p| Pool {
-                handle: self.0.clone(),
-                name: p.into(),
-            })
+            .map(|p| Pool::new(self.0.clone(), p.into()))
             .collect())
     }
 }
@@ -61,6 +65,10 @@ pub struct Pool {
 }
 
 impl Pool {
+    fn new(handle: Rc<Handle>, name: AutoString) -> Pool {
+        Pool { handle, name }
+    }
+
     pub fn name(&self) -> String {
         self.name.to_string()
     }
