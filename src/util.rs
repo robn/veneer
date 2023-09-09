@@ -14,6 +14,22 @@ use std::fmt;
 #[derive(Clone)]
 pub(crate) struct AutoString(CString, OnceCell<String>);
 
+impl AutoString {
+    pub fn as_c_str(&self) -> &CStr {
+        self.0.as_c_str()
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.1
+            .get_or_init(|| self.0.to_string_lossy().to_string())
+            .as_str()
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
 impl PartialEq for AutoString {
     fn eq(&self, other: &Self) -> bool {
         self.0.eq(&other.0)
@@ -42,11 +58,7 @@ impl Default for AutoString {
 
 impl fmt::Display for AutoString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.1.get_or_init(|| self.0.to_string_lossy().to_string())
-        )
+        write!(f, "{}", self.as_str())
     }
 }
 
