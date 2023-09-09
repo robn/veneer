@@ -62,15 +62,9 @@ impl fmt::Display for AutoString {
     }
 }
 
-impl From<CString> for AutoString {
-    fn from(s: CString) -> Self {
-        AutoString(s, OnceCell::new())
-    }
-}
-
-impl From<&CStr> for AutoString {
-    fn from(s: &CStr) -> Self {
-        AutoString(s.into(), OnceCell::new())
+impl<T: ?Sized + AsRef<CStr>> From<&T> for AutoString {
+    fn from(s: &T) -> Self {
+        AutoString(s.as_ref().into(), OnceCell::new())
     }
 }
 
