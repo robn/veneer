@@ -13,6 +13,7 @@ derivative = "2.2.0"
 num-traits = "0.2.16"
 num-derive = "0.4.0"
 desert = "2.0.1"
+elsa = "1.9.0"
 
 [dev-dependencies]
 crossterm = "0.27.0"
