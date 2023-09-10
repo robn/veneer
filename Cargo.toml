@@ -16,5 +16,7 @@ desert = "2.0.1"
 elsa = "1.9.0"
 
 [dev-dependencies]
+bytesize = "1.3.0"
 crossterm = "0.27.0"
 ratatui = "0.23.0"
+tabled = "0.14.0"
