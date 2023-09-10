@@ -103,6 +103,20 @@ impl Pair {
             _ => None,
         }
     }
+
+    pub fn to_u64(&self) -> Option<u64> {
+        match self.1 {
+            PairValue::UInt64(n) => Some(n),
+            _ => None,
+        }
+    }
+
+    pub fn to_c_string(&self) -> Option<CString> {
+        match self.1 {
+            PairValue::String(ref s) => Some(s.clone()),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug)]
