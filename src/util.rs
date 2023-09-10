@@ -11,7 +11,7 @@ use std::fmt;
 
 // this badly-named thing takes a CString and does a lossy conversion to String on demand, which is
 // what you want almost always
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct AutoString(CString, OnceCell<String>);
 
 impl AutoString {
