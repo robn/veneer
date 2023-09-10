@@ -152,4 +152,24 @@ impl Dataset {
     pub fn name(&self) -> String {
         self.name.to_string()
     }
+
+    fn get_prop(&self, prop: &str) -> Result<Option<&PairList>, Box<dyn Error>> {
+        let dslist = self.handle.get_dataset(&self.name)?;
+        Ok(dslist.get(prop).and_then(|p| p.as_list()))
+    }
+
+    pub fn get_prop_u64(&self, prop: &str) -> Result<Option<u64>, Box<dyn Error>> {
+        Ok(self
+            .get_prop(prop)?
+            .and_then(|l| l.get("value"))
+            .and_then(|p| p.to_u64()))
+    }
+
+    pub fn get_prop_string(&self, prop: &str) -> Result<Option<String>, Box<dyn Error>> {
+        Ok(self
+            .get_prop(prop)?
+            .and_then(|l| l.get("value"))
+            .and_then(|p| p.to_c_string())
+            .map(|cs| cs.to_string_lossy().to_string()))
+    }
 }
