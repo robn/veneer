@@ -42,15 +42,17 @@ impl Handle {
         Ok(self.config.get().unwrap())
     }
 
-    fn get_dataset(&self, name: &CStr) -> Result<&PairList, Box<dyn Error>> {
-        if let Some(p) = self.datasets.get(name) {
+    fn get_dataset(&self, name: impl AsRef<CStr>) -> Result<&PairList, Box<dyn Error>> {
+        let nref = name.as_ref();
+
+        if let Some(p) = self.datasets.get(nref) {
             return Ok(p);
         }
 
-        let p = self.ioc.borrow_mut().objset_stats(name)?;
-        self.datasets.insert(name.into(), Box::new(p));
+        let p = self.ioc.borrow_mut().objset_stats(nref)?;
+        self.datasets.insert(nref.into(), Box::new(p));
 
-        Ok(self.datasets.get(name).unwrap())
+        Ok(self.datasets.get(nref).unwrap())
     }
 
     fn get_dataset_list(&self) -> Result<Vec<&CStr>, Box<dyn Error>> {

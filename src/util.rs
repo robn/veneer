@@ -62,6 +62,24 @@ impl fmt::Display for AutoString {
     }
 }
 
+impl AsRef<CStr> for AutoString {
+    fn as_ref(&self) -> &CStr {
+        self.as_c_str()
+    }
+}
+
+impl AsRef<str> for AutoString {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl AsRef<[u8]> for AutoString {
+    fn as_ref(&self) -> &[u8] {
+        self.as_bytes()
+    }
+}
+
 impl<T: ?Sized + AsRef<CStr>> From<&T> for AutoString {
     fn from(s: &T) -> Self {
         AutoString(s.as_ref().into(), OnceCell::new())
