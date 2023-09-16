@@ -9,14 +9,17 @@ use crate::nvpair::PairList;
 use crate::util::AutoString;
 use elsa::FrozenMap;
 use std::cell::{OnceCell, RefCell};
+use std::collections::VecDeque;
 use std::error::Error;
 use std::ffi::{CStr, CString};
 use std::io::Error as IOError;
+use std::io::ErrorKind as IOErrorKind;
 use std::rc::Rc;
 
 struct Handle {
     ioc: RefCell<ioc::Handle>,
     config: OnceCell<PairList>,
+    pools: FrozenMap<CString, Box<PairList>>,
     datasets: FrozenMap<CString, Box<PairList>>,
 }
 
@@ -25,6 +28,7 @@ impl Handle {
         Ok(Handle {
             ioc: RefCell::new(ioc::Handle::open()?),
             config: OnceCell::default(),
+            pools: FrozenMap::default(),
             datasets: FrozenMap::default(),
         })
     }
@@ -40,6 +44,19 @@ impl Handle {
         let _ = self.config.set(c);
 
         Ok(self.config.get().unwrap())
+    }
+
+    fn get_pool(&self, name: impl AsRef<CStr>) -> Result<&PairList, Box<dyn Error>> {
+        let nref = name.as_ref();
+
+        if let Some(p) = self.pools.get(nref) {
+            return Ok(p);
+        }
+
+        let p = self.ioc.borrow_mut().pool_stats(nref)?;
+        self.pools.insert(nref.into(), Box::new(p));
+
+        Ok(self.pools.get(nref).unwrap())
     }
 
     fn get_dataset(&self, name: impl AsRef<CStr>) -> Result<&PairList, Box<dyn Error>> {
