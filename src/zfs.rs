@@ -20,6 +20,7 @@ struct Handle {
     ioc: RefCell<ioc::Handle>,
     config: OnceCell<PairList>,
     pools: FrozenMap<CString, Box<PairList>>,
+    vdevs: FrozenMap<u64, Box<PairList>>,
     datasets: FrozenMap<CString, Box<PairList>>,
 }
 
@@ -29,6 +30,7 @@ impl Handle {
             ioc: RefCell::new(ioc::Handle::open()?),
             config: OnceCell::default(),
             pools: FrozenMap::default(),
+            vdevs: FrozenMap::default(),
             datasets: FrozenMap::default(),
         })
     }
@@ -57,6 +59,37 @@ impl Handle {
         self.pools.insert(nref.into(), Box::new(p));
 
         Ok(self.pools.get(nref).unwrap())
+    }
+
+    fn get_vdev(&self, name: impl AsRef<CStr>, guid: u64) -> Result<&PairList, Box<dyn Error>> {
+        if let Some(v) = self.vdevs.get(&guid) {
+            return Ok(v);
+        }
+
+        let plist = self.get_pool(name)?;
+        let top = plist
+            .get("vdev_tree")
+            .and_then(|p| p.as_list())
+            .ok_or_else(|| IOError::from(IOErrorKind::NotFound))?; // XXX should be impossible, maybe
+                                                                   // just panic?
+
+        let mut vds: VecDeque<&PairList> = VecDeque::new();
+        vds.push_back(top);
+
+        while let Some(vd) = vds.pop_front() {
+            if let Some(vguid) = vd.get("guid").and_then(|p| p.to_u64()) {
+                if let None = self.vdevs.get(&vguid) {
+                    self.vdevs.insert(vguid, Box::new(vd.clone()));
+                }
+                vd.get("children")
+                    .and_then(|p| p.as_list_slice())
+                    .into_iter()
+                    .flatten()
+                    .for_each(|cvd| vds.push_back(cvd));
+            }
+        }
+
+        Ok(self.vdevs.get(&guid).unwrap())
     }
 
     fn get_dataset(&self, name: impl AsRef<CStr>) -> Result<&PairList, Box<dyn Error>> {
@@ -141,6 +174,17 @@ impl Pool {
         self.name.to_string()
     }
 
+    pub fn root_vdev(&self) -> Result<Vdev, Box<dyn Error>> {
+        let plist = self.handle.get_pool(&self.name)?;
+        let guid = plist
+            .get("vdev_tree")
+            .and_then(|p| p.as_list())
+            .and_then(|l| l.get("guid"))
+            .and_then(|p| p.to_u64())
+            .ok_or_else(|| IOError::from(IOErrorKind::NotFound))?;
+        Ok(Vdev::new(self.handle.clone(), self.name.clone(), guid))
+    }
+
     pub fn datasets(&self) -> Result<Vec<Dataset>, Box<dyn Error>> {
         Ok(self
             .handle
@@ -152,6 +196,36 @@ impl Pool {
                         || ds.to_bytes()[self.name.as_bytes().len()] == b'/')
             })
             .map(|ds| Dataset::new(self.handle.clone(), ds.into()))
+            .collect())
+    }
+}
+
+pub struct Vdev {
+    handle: Rc<Handle>,
+    pool: AutoString,
+    guid: u64,
+}
+
+impl Vdev {
+    fn new(handle: Rc<Handle>, pool: AutoString, guid: u64) -> Vdev {
+        Vdev { handle, pool, guid }
+    }
+
+    pub fn guid(&self) -> u64 {
+        self.guid
+    }
+
+    pub fn children(&self) -> Result<Vec<Vdev>, Box<dyn Error>> {
+        Ok(self
+            .handle
+            .get_vdev(&self.pool, self.guid)?
+            .get("children")
+            .and_then(|p| p.as_list_slice())
+            .into_iter()
+            .flatten()
+            .map(|vl| vl.get("guid").and_then(|p| p.to_u64()))
+            .flatten()
+            .map(|guid| Vdev::new(self.handle.clone(), self.pool.clone(), guid))
             .collect())
     }
 }

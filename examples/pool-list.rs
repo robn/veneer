@@ -12,6 +12,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for pool in z.pools()? {
         println!("{}", pool.name());
+
+        let root = pool.root_vdev()?;
+        println!("  {}", root.guid());
+
+        for c in root.children()? {
+            println!("    {}", c.guid());
+        }
     }
 
     Ok(())
