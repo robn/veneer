@@ -43,7 +43,7 @@ enum PairType {
     Double = 27,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PairValue {
     Boolean,
     Byte(u8),
@@ -74,7 +74,7 @@ pub enum PairValue {
     Double(f64),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pair(CString, PairValue);
 
 impl From<Pair> for (CString, PairValue) {
@@ -127,7 +127,7 @@ impl Pair {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PairList(Vec<Pair>);
 
 impl PairList {
