@@ -7,8 +7,7 @@
 use crate::ioc;
 use crate::nvpair::PairList;
 use crate::util::AutoString;
-use elsa::FrozenMap;
-use std::cell::{OnceCell, RefCell};
+use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::error::Error;
 use std::ffi::{CStr, CString};
@@ -18,54 +17,28 @@ use std::rc::Rc;
 
 struct Handle {
     ioc: RefCell<ioc::Handle>,
-    config: OnceCell<PairList>,
-    pools: FrozenMap<CString, Box<PairList>>,
-    vdevs: FrozenMap<u64, Box<PairList>>,
-    datasets: FrozenMap<CString, Box<PairList>>,
 }
 
 impl Handle {
     fn open() -> Result<Handle, Box<dyn Error>> {
         Ok(Handle {
             ioc: RefCell::new(ioc::Handle::open()?),
-            config: OnceCell::default(),
-            pools: FrozenMap::default(),
-            vdevs: FrozenMap::default(),
-            datasets: FrozenMap::default(),
         })
     }
 
-    fn get_config(&self) -> Result<&PairList, Box<dyn Error>> {
-        // XXX get_or_try_init [feature "once_cell_try"] would be better
-        //self.config.get_or_try_init(|| self.ioc.borrow_mut().pool_configs()?);
-        if let Some(c) = self.config.get() {
-            return Ok(c);
-        }
-
-        let c = self.ioc.borrow_mut().pool_configs()?;
-        let _ = self.config.set(c);
-
-        Ok(self.config.get().unwrap())
+    fn get_config(&self) -> Result<PairList, Box<dyn Error>> {
+        self.ioc.borrow_mut().pool_configs()
     }
 
-    fn get_pool(&self, name: impl AsRef<CStr>) -> Result<&PairList, Box<dyn Error>> {
-        let nref = name.as_ref();
-
-        if let Some(p) = self.pools.get(nref) {
-            return Ok(p);
-        }
-
-        let p = self.ioc.borrow_mut().pool_stats(nref)?;
-        self.pools.insert(nref.into(), Box::new(p));
-
-        Ok(self.pools.get(nref).unwrap())
+    fn get_pool(&self, name: impl AsRef<CStr>) -> Result<PairList, Box<dyn Error>> {
+        self.ioc.borrow_mut().pool_stats(name.as_ref())
     }
 
-    fn get_vdev(&self, name: impl AsRef<CStr>, guid: u64) -> Result<&PairList, Box<dyn Error>> {
-        if let Some(v) = self.vdevs.get(&guid) {
-            return Ok(v);
-        }
-
+    fn get_vdev(
+        &self,
+        name: impl AsRef<CStr>,
+        guid: u64,
+    ) -> Result<Option<PairList>, Box<dyn Error>> {
         let plist = self.get_pool(name)?;
         let top = plist
             .get("vdev_tree")
@@ -78,9 +51,10 @@ impl Handle {
 
         while let Some(vd) = vds.pop_front() {
             if let Some(vguid) = vd.get("guid").and_then(|p| p.to_u64()) {
-                if let None = self.vdevs.get(&vguid) {
-                    self.vdevs.insert(vguid, Box::new(vd.clone()));
+                if vguid == guid {
+                    return Ok(Some(vd.clone()));
                 }
+
                 vd.get("children")
                     .and_then(|p| p.as_list_slice())
                     .into_iter()
@@ -89,43 +63,27 @@ impl Handle {
             }
         }
 
-        Ok(self.vdevs.get(&guid).unwrap())
+        Ok(None)
     }
 
-    fn get_dataset(&self, name: impl AsRef<CStr>) -> Result<&PairList, Box<dyn Error>> {
-        let nref = name.as_ref();
-
-        if let Some(p) = self.datasets.get(nref) {
-            return Ok(p);
-        }
-
-        let p = self.ioc.borrow_mut().objset_stats(nref)?;
-        self.datasets.insert(nref.into(), Box::new(p));
-
-        Ok(self.datasets.get(nref).unwrap())
+    fn get_dataset(&self, name: impl AsRef<CStr>) -> Result<PairList, Box<dyn Error>> {
+        self.ioc.borrow_mut().objset_stats(name.as_ref())
     }
 
-    fn get_dataset_list(&self) -> Result<Vec<&CStr>, Box<dyn Error>> {
-        let mut list: Vec<&CStr> = vec![];
+    fn get_dataset_list(&self) -> Result<Vec<CString>, Box<dyn Error>> {
+        let mut list: Vec<CString> = vec![];
 
         for pool in self.get_config()?.keys() {
             let _ = self.get_dataset(pool)?;
-            list.push(pool);
+            list.push(pool.into());
 
             let mut stack: Vec<(CString, u64)> = vec![(pool.into(), 0)];
             while let Some((name, cookie)) = stack.pop() {
                 match self.ioc.borrow_mut().dataset_list_next(&name, cookie) {
                     Ok(is) => {
+                        list.push(is.name.clone());
                         stack.push((name, is.cookie));
-                        let name = is.name.clone();
-                        list.push(match self.datasets.get_key_value(&name) {
-                            Some((k, _)) => k,
-                            None => {
-                                self.datasets.insert(name.clone(), Box::new(is.list));
-                                self.datasets.get_key_value(&name).unwrap().0
-                            }
-                        });
-                        stack.push((name, 0));
+                        stack.push((is.name, 0));
                     }
                     Err(e) => {
                         let ioe = e.downcast::<IOError>()?;
@@ -219,10 +177,13 @@ impl Vdev {
         Ok(self
             .handle
             .get_vdev(&self.pool, self.guid)?
-            .get("children")
-            .and_then(|p| p.as_list_slice())
-            .into_iter()
-            .flatten()
+            .and_then(|l| {
+                l.get("children")
+                    .and_then(|p| p.as_list_slice())
+                    .map(|s| s.to_vec())
+            })
+            .unwrap_or(vec![])
+            .iter()
             .map(|vl| vl.get("guid").and_then(|p| p.to_u64()))
             .flatten()
             .map(|guid| Vdev::new(self.handle.clone(), self.pool.clone(), guid))
@@ -244,23 +205,21 @@ impl Dataset {
         self.name.to_string()
     }
 
-    fn get_prop(&self, prop: &str) -> Result<Option<&PairList>, Box<dyn Error>> {
+    fn get_prop(&self, prop: &str) -> Result<Option<PairList>, Box<dyn Error>> {
         let dslist = self.handle.get_dataset(&self.name)?;
-        Ok(dslist.get(prop).and_then(|p| p.as_list()))
+        Ok(dslist.get(prop).and_then(|p| p.as_list()).cloned())
     }
 
     pub fn get_prop_u64(&self, prop: &str) -> Result<Option<u64>, Box<dyn Error>> {
         Ok(self
             .get_prop(prop)?
-            .and_then(|l| l.get("value"))
-            .and_then(|p| p.to_u64()))
+            .and_then(|l| l.get("value").and_then(|p| p.to_u64())))
     }
 
     pub fn get_prop_string(&self, prop: &str) -> Result<Option<String>, Box<dyn Error>> {
         Ok(self
             .get_prop(prop)?
-            .and_then(|l| l.get("value"))
-            .and_then(|p| p.to_c_string())
+            .and_then(|l| l.get("value").and_then(|p| p.to_c_string()))
             .map(|cs| cs.to_string_lossy().to_string()))
     }
 }
