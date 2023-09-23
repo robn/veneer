@@ -6,6 +6,7 @@
 
 use crate::ioc;
 use crate::nvpair::PairList;
+use crate::nvtypes;
 use crate::util::AutoString;
 use std::cell::RefCell;
 use std::collections::VecDeque;
@@ -188,6 +189,18 @@ impl Vdev {
             .flatten()
             .map(|guid| Vdev::new(self.handle.clone(), self.pool.clone(), guid))
             .collect())
+    }
+
+    pub fn stats(&self) -> Result<nvtypes::VdevStats, Box<dyn Error>> {
+        Ok(self
+            .handle
+            .get_vdev(&self.pool, self.guid)?
+            .and_then(|l| {
+                l.get("vdev_stats")
+                    .and_then(|p| p.as_u64_slice())
+                    .map(|s| nvtypes::VdevStats::from(s))
+            })
+            .unwrap_or_default())
     }
 }
 

@@ -4,35 +4,20 @@
 
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
-// XXX convert to high-level api, when we have one
-
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event, KeyCode};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use ratatui::prelude::*;
 use ratatui::widgets::*;
-use std::collections::BTreeMap;
 use std::error::Error;
-use std::ffi::CStr;
 use std::iter;
 use std::time::{Duration, Instant};
-use veneer::ioc;
-use veneer::nvtypes::VdevStats;
+use veneer::zfs::{self, Pool};
 
-fn get_stats(ioc: &mut ioc::Handle, pool: &CStr) -> Result<(u64, u64), Box<dyn Error>> {
-    let stats = ioc.pool_stats(pool)?;
-
-    let (r, w) = stats
-        .get("vdev_tree")
-        .and_then(|p| p.as_list())
-        .and_then(|l| l.get("vdev_stats"))
-        .and_then(|p| p.as_u64_slice())
-        .map(|s| VdevStats::from(s))
-        .map(|vs| (vs.bytes[1], vs.bytes[2]))
-        .unwrap_or_default();
-
-    Ok((r, w))
+fn get_stats(pool: &Pool) -> Result<(u64, u64), Box<dyn Error>> {
+    let vs = pool.root_vdev()?.stats()?;
+    Ok((vs.bytes[1], vs.bytes[2]))
 }
 
 struct PoolState {
@@ -42,10 +27,8 @@ struct PoolState {
     write_history: Vec<u64>,
 }
 
-fn render_pool<B: Backend>(frame: &mut Frame<B>, rect: Rect, pool: &CStr, state: &PoolState) {
-    let block = Block::default()
-        .title(pool.to_string_lossy().to_string())
-        .borders(Borders::ALL);
+fn render_pool<B: Backend>(frame: &mut Frame<B>, rect: Rect, pool: &Pool, state: &PoolState) {
+    let block = Block::default().title(pool.name()).borders(Borders::ALL);
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
     let rows = Layout::default()
@@ -64,16 +47,15 @@ fn render_pool<B: Backend>(frame: &mut Frame<B>, rect: Rect, pool: &CStr, state:
 
 fn main() -> Result<(), Box<dyn Error>> {
     // connect to zfs and get initial stats
-    let mut ioc = ioc::Handle::open()?;
+    let z = zfs::open()?;
 
-    let mut pool_state: BTreeMap<&CStr, PoolState> = BTreeMap::new();
+    let mut pool_state: Vec<(Pool, PoolState)> = vec![];
 
-    let config = ioc.pool_configs()?;
-    for pool in config.keys() {
-        let (r, w) = get_stats(&mut ioc, pool)?;
+    for pool in z.pools()? {
+        let (r, w) = get_stats(&pool)?;
         let read_v: Vec<u64> = iter::repeat(0).take(200).collect();
         let write_v: Vec<u64> = iter::repeat(0).take(200).collect();
-        pool_state.insert(
+        pool_state.push((
             pool,
             PoolState {
                 read_last: r,
@@ -81,7 +63,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 read_history: read_v,
                 write_history: write_v,
             },
-        );
+        ));
     }
 
     // setup terminal
@@ -122,8 +104,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
         if last_tick.elapsed() >= tick {
-            for (&pool, state) in pool_state.iter_mut() {
-                let (r, w) = get_stats(&mut ioc, pool)?;
+            for (pool, state) in pool_state.iter_mut() {
+                let (r, w) = get_stats(&pool)?;
                 let (dr, dw) = (r - state.read_last, w - state.write_last);
                 state.read_history.pop();
                 state.read_history.insert(0, dr);
