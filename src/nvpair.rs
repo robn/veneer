@@ -146,6 +146,41 @@ impl PairList {
             .ok()
             .and_then(|key| self.pairs().filter(|p| p.0 == key).next())
     }
+
+    pub fn get_list<T>(&self, t: T) -> Option<&PairList>
+    where
+        T: Into<Vec<u8>>,
+    {
+        self.get(t).and_then(|p| p.as_list())
+    }
+
+    pub fn get_list_slice<T>(&self, t: T) -> Option<&[PairList]>
+    where
+        T: Into<Vec<u8>>,
+    {
+        self.get(t).and_then(|p| p.as_list_slice())
+    }
+
+    pub fn get_u64<T>(&self, t: T) -> Option<u64>
+    where
+        T: Into<Vec<u8>>,
+    {
+        self.get(t).and_then(|p| p.to_u64())
+    }
+
+    pub fn get_u64_slice<T>(&self, t: T) -> Option<&[u64]>
+    where
+        T: Into<Vec<u8>>,
+    {
+        self.get(t).and_then(|p| p.as_u64_slice())
+    }
+
+    pub fn get_c_string<T>(&self, t: T) -> Option<CString>
+    where
+        T: Into<Vec<u8>>,
+    {
+        self.get(t).and_then(|p| p.to_c_string())
+    }
 }
 
 #[derive(Debug)]

@@ -42,8 +42,7 @@ impl Handle {
     ) -> Result<Option<PairList>, Box<dyn Error>> {
         let plist = self.get_pool(name)?;
         let top = plist
-            .get("vdev_tree")
-            .and_then(|p| p.as_list())
+            .get_list("vdev_tree")
             .ok_or_else(|| IOError::from(IOErrorKind::NotFound))?; // XXX should be impossible, maybe
                                                                    // just panic?
 
@@ -51,13 +50,12 @@ impl Handle {
         vds.push_back(top);
 
         while let Some(vd) = vds.pop_front() {
-            if let Some(vguid) = vd.get("guid").and_then(|p| p.to_u64()) {
+            if let Some(vguid) = vd.get_u64("guid") {
                 if vguid == guid {
                     return Ok(Some(vd.clone()));
                 }
 
-                vd.get("children")
-                    .and_then(|p| p.as_list_slice())
+                vd.get_list_slice("children")
                     .into_iter()
                     .flatten()
                     .for_each(|cvd| vds.push_back(cvd));
@@ -136,10 +134,8 @@ impl Pool {
     pub fn root_vdev(&self) -> Result<Vdev, Box<dyn Error>> {
         let plist = self.handle.get_pool(&self.name)?;
         let guid = plist
-            .get("vdev_tree")
-            .and_then(|p| p.as_list())
-            .and_then(|l| l.get("guid"))
-            .and_then(|p| p.to_u64())
+            .get_list("vdev_tree")
+            .and_then(|l| l.get_u64("guid"))
             .ok_or_else(|| IOError::from(IOErrorKind::NotFound))?;
         Ok(Vdev::new(self.handle.clone(), self.name.clone(), guid))
     }
@@ -178,14 +174,10 @@ impl Vdev {
         Ok(self
             .handle
             .get_vdev(&self.pool, self.guid)?
-            .and_then(|l| {
-                l.get("children")
-                    .and_then(|p| p.as_list_slice())
-                    .map(|s| s.to_vec())
-            })
+            .and_then(|l| l.get_list_slice("children").map(|s| s.to_vec()))
             .unwrap_or(vec![])
             .iter()
-            .map(|vl| vl.get("guid").and_then(|p| p.to_u64()))
+            .map(|vl| vl.get_u64("guid"))
             .flatten()
             .map(|guid| Vdev::new(self.handle.clone(), self.pool.clone(), guid))
             .collect())
@@ -196,8 +188,7 @@ impl Vdev {
             .handle
             .get_vdev(&self.pool, self.guid)?
             .and_then(|l| {
-                l.get("vdev_stats")
-                    .and_then(|p| p.as_u64_slice())
+                l.get_u64_slice("vdev_stats")
                     .map(|s| nvtypes::VdevStats::from(s))
             })
             .unwrap_or_default())
@@ -220,19 +211,17 @@ impl Dataset {
 
     fn get_prop(&self, prop: &str) -> Result<Option<PairList>, Box<dyn Error>> {
         let dslist = self.handle.get_dataset(&self.name)?;
-        Ok(dslist.get(prop).and_then(|p| p.as_list()).cloned())
+        Ok(dslist.get_list(prop).cloned())
     }
 
     pub fn get_prop_u64(&self, prop: &str) -> Result<Option<u64>, Box<dyn Error>> {
-        Ok(self
-            .get_prop(prop)?
-            .and_then(|l| l.get("value").and_then(|p| p.to_u64())))
+        Ok(self.get_prop(prop)?.and_then(|l| l.get_u64("value")))
     }
 
     pub fn get_prop_string(&self, prop: &str) -> Result<Option<String>, Box<dyn Error>> {
         Ok(self
             .get_prop(prop)?
-            .and_then(|l| l.get("value").and_then(|p| p.to_c_string()))
+            .and_then(|l| l.get_c_string("value"))
             .map(|cs| cs.to_string_lossy().to_string()))
     }
 }
