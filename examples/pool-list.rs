@@ -12,12 +12,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let z = zfs::open()?;
 
     let mut tb = Builder::default();
-    tb.set_header(["name", "state", "read", "write", "cksum", "slow"]);
+    tb.set_header(["name", "type", "state", "read", "write", "cksum", "slow"]);
 
     let mut push_vdev = |name: String, vd: &Vdev| -> Result<(), Box<dyn Error>> {
         let vs = vd.stats()?;
         tb.push_record([
             format!("{}", name),
+            format!("{:?}", vd.typ()),
             format!("{}", vs.state),
             format!("{}", vs.read_errors),
             format!("{}", vs.write_errors),
