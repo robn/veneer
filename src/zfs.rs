@@ -5,6 +5,7 @@
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
 use crate::ioc;
+use crate::nvenums::VdevType;
 use crate::nvpair::PairList;
 use crate::nvtypes;
 use crate::util::AutoString;
@@ -132,12 +133,11 @@ impl Pool {
     }
 
     pub fn root_vdev(&self) -> Result<Vdev, Box<dyn Error>> {
-        let plist = self.handle.get_pool(&self.name)?;
-        let guid = plist
+        let pl = self.handle.get_pool(&self.name)?;
+        let vl = pl
             .get_list("vdev_tree")
-            .and_then(|l| l.get_u64("guid"))
             .ok_or_else(|| IOError::from(IOErrorKind::NotFound))?;
-        Ok(Vdev::new(self.handle.clone(), self.name.clone(), guid))
+        Vdev::new(self.handle.clone(), self.name.clone(), vl)
     }
 
     pub fn datasets(&self) -> Result<Vec<Dataset>, Box<dyn Error>> {
@@ -159,15 +159,31 @@ pub struct Vdev {
     handle: Rc<Handle>,
     pool: AutoString,
     guid: u64,
+    typ: VdevType,
 }
 
 impl Vdev {
-    fn new(handle: Rc<Handle>, pool: AutoString, guid: u64) -> Vdev {
-        Vdev { handle, pool, guid }
+    fn new(handle: Rc<Handle>, pool: AutoString, vl: &PairList) -> Result<Vdev, Box<dyn Error>> {
+        let guid = vl
+            .get_u64("guid")
+            .ok_or_else(|| IOError::from(IOErrorKind::NotFound))?;
+        let typ = vl
+            .get_c_string("type")
+            .ok_or_else(|| IOError::from(IOErrorKind::NotFound))?;
+        Ok(Vdev {
+            handle,
+            pool,
+            guid,
+            typ: (&typ).into(),
+        })
     }
 
     pub fn guid(&self) -> u64 {
         self.guid
+    }
+
+    pub fn typ(&self) -> VdevType {
+        self.typ
     }
 
     pub fn children(&self) -> Result<Vec<Vdev>, Box<dyn Error>> {
@@ -177,9 +193,8 @@ impl Vdev {
             .and_then(|l| l.get_list_slice("children").map(|s| s.to_vec()))
             .unwrap_or(vec![])
             .iter()
-            .map(|vl| vl.get_u64("guid"))
+            .map(|vl| Vdev::new(self.handle.clone(), self.pool.clone(), vl))
             .flatten()
-            .map(|guid| Vdev::new(self.handle.clone(), self.pool.clone(), guid))
             .collect())
     }
 
