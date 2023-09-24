@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut tb = Builder::default();
     tb.set_header(["name", "type", "state", "read", "write", "cksum", "slow"]);
 
-    let mut push_vdev = |name: String, vd: &Vdev| -> Result<(), Box<dyn Error>> {
+    fn push_vdev(tb: &mut Builder, name: String, vd: &Vdev) -> Result<(), Box<dyn Error>> {
         let vs = vd.stats()?;
         tb.push_record([
             format!("{}", name),
@@ -25,17 +25,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             format!("{}", vs.checksum_errors),
             format!("{}", vs.slow_ios),
         ]);
+
+        for cvd in vd.children()? {
+            push_vdev(tb, cvd.guid().to_string(), &cvd)?;
+        }
+
         Ok(())
-    };
+    }
 
     for pool in z.pools()? {
         let root = pool.root_vdev()?;
 
-        push_vdev(pool.name(), &root)?;
-
-        for vd in root.children()? {
-            push_vdev(vd.guid().to_string(), &vd)?;
-        }
+        push_vdev(&mut tb, pool.name(), &root)?;
     }
 
     let table = tb.build().with(Style::rounded()).to_string();
