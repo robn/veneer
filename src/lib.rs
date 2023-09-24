@@ -5,6 +5,7 @@
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
 pub mod ioc;
+pub mod nvenums;
 mod nvpair;
 pub mod nvtypes;
 mod sys;
