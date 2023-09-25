@@ -15,14 +15,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut tb = Builder::default();
     tb.set_header(["name", "type", "state", "read", "write", "cksum", "slow"]);
 
-    fn push_vdev(tb: &mut Builder, vd: &Vdev, indent: usize) -> Result<(), Box<dyn Error>> {
+    fn push_vdev(
+        tb: &mut Builder,
+        vd: &Vdev,
+        indent: usize,
+        last: bool,
+    ) -> Result<(), Box<dyn Error>> {
         let vs = vd.stats()?;
+        let hook = if last { "└ " } else { "├ " };
         let graph = match indent {
             0 => "".into(),
-            1 => "└ ".into(),
-            _ => iter::repeat("  ")
+            1 => hook.into(),
+            _ => iter::repeat("│ ")
                 .take(indent - 1)
-                .chain(iter::once("└ "))
+                .chain(iter::once(hook))
                 .collect::<String>(),
         };
         tb.push_record([
@@ -35,8 +41,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             format!("{}", vs.slow_ios),
         ]);
 
-        for cvd in vd.children()? {
-            push_vdev(tb, &cvd, indent + 1)?;
+        let mut vds = vd.children()?;
+        let last = vds.pop();
+        for cvd in vds {
+            push_vdev(tb, &cvd, indent + 1, false)?;
+        }
+        if let Some(cvd) = last {
+            push_vdev(tb, &cvd, indent + 1, true)?;
         }
 
         Ok(())
@@ -45,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for pool in z.pools()? {
         let root = pool.root_vdev()?;
 
-        push_vdev(&mut tb, &root, 0)?;
+        push_vdev(&mut tb, &root, 0, false)?;
     }
 
     let table = tb.build().with(Style::rounded()).to_string();
