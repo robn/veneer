@@ -13,7 +13,7 @@ use ratatui::widgets::*;
 use std::error::Error;
 use std::iter;
 use std::time::{Duration, Instant};
-use veneer::zfs::Pool;
+use veneer::Pool;
 
 fn get_stats(pool: &Pool) -> Result<(u64, u64), Box<dyn Error>> {
     let vs = pool.root_vdev()?.stats()?;
@@ -47,7 +47,7 @@ fn render_pool(frame: &mut Frame, rect: Rect, pool: &Pool, state: &PoolState) {
 
 fn main() -> Result<(), Box<dyn Error>> {
     // connect to zfs and get initial stats
-    let z = veneer::zfs::open()?;
+    let z = veneer::open()?;
 
     let mut pool_state: Vec<(Pool, PoolState)> = vec![];
 

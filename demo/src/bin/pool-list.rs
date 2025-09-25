@@ -7,10 +7,10 @@
 use std::error::Error;
 use std::iter;
 use tabled::{builder::Builder, settings::Style};
-use veneer::zfs::Vdev;
+use veneer::Vdev;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let z = veneer::zfs::open()?;
+    let z = veneer::open()?;
 
     let mut tb = Builder::default();
     tb.push_record(["name", "type", "state", "read", "write", "cksum", "slow"]);

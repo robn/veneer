@@ -7,4 +7,21 @@
 mod nvenums;
 mod nvtypes;
 mod util;
-pub mod zfs;
+
+mod dataset;
+mod handle;
+mod host;
+mod pool;
+mod vdev;
+
+pub use dataset::Dataset;
+pub use handle::Handle;
+pub use host::Host;
+pub use pool::Pool;
+pub use vdev::Vdev;
+
+use std::error::Error;
+
+pub fn open() -> Result<Host, Box<dyn Error>> {
+    Host::open()
+}

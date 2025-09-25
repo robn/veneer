@@ -30,7 +30,7 @@ const FIELDS: &[Field] = &[
 ];
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let z = veneer::zfs::open()?;
+    let z = veneer::open()?;
 
     let mut tb = Builder::default();
     tb.push_record(
