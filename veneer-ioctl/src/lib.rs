@@ -4,5 +4,7 @@
 
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
-pub mod handle;
+mod handle;
 mod sys;
+
+pub use handle::Handle;

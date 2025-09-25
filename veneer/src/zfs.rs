@@ -16,7 +16,7 @@ use std::io::Error as IOError;
 use std::io::ErrorKind as IOErrorKind;
 use std::rc::Rc;
 
-use veneer_ioctl::handle::Handle as IOCHandle;
+use veneer_ioctl::Handle as IOCHandle;
 
 struct Handle {
     ioc: RefCell<IOCHandle>,
