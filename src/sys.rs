@@ -98,7 +98,7 @@ pub(crate) struct ZFSShare {
 #[derive(Derivative, Debug)]
 #[derivative(Default)]
 pub(crate) struct ZFSStat {
-    gen: u64,
+    generation: u64,
     mode: u64,
     links: u64,
     #[derivative(Default(value = "[0; 2]"))]
@@ -157,7 +157,7 @@ pub(crate) struct ZFSCommand {
     zoneid: u64,
 }
 
-extern "C" {
+unsafe extern "C" {
     fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
 }
 

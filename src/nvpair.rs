@@ -201,8 +201,14 @@ impl fmt::Display for ParseError {
             ParseError::InvalidEndian => f.write_str("invalid endian"),
             ParseError::ShortRead => f.write_str("short read"),
             ParseError::UnterminatedString => f.write_str("unterminated string"),
-            ParseError::UnknownPairType(_) => f.write_str("unknown pair type"),
-            ParseError::IOError(_) => f.write_str("io error"),
+            ParseError::UnknownPairType(n) => {
+                let e = format!("unknown pair type ({n})");
+                f.write_str(&e)
+            }
+            ParseError::IOError(ref err) => {
+                let e = format!("io error ({err})");
+                f.write_str(&e)
+            }
         }
     }
 }
@@ -279,7 +285,7 @@ impl Parser {
         Ok(l)
     }
 
-    fn parse_int<'a, T>(&'a self, buf: &'a [u8]) -> Result<(T, &[u8]), ParseError>
+    fn parse_int<'a, T>(&'a self, buf: &'a [u8]) -> Result<(T, &'a [u8]), ParseError>
     where
         T: FromBytesLE,
     {
@@ -291,13 +297,13 @@ impl Parser {
         Ok((v, &buf[s..]))
     }
 
-    fn parse_string<'a>(&'a self, buf: &'a [u8]) -> Result<(CString, &[u8]), ParseError> {
+    fn parse_string<'a>(&'a self, buf: &'a [u8]) -> Result<(CString, &'a [u8]), ParseError> {
         let cstr = CStr::from_bytes_until_nul(buf)?;
         let s = align(cstr.to_bytes_with_nul().len());
         Ok((cstr.into(), &buf[s..]))
     }
 
-    fn parse_nvlist<'a>(&'a self, buf: &'a [u8]) -> Result<(PairList, &[u8]), ParseError> {
+    fn parse_nvlist<'a>(&'a self, buf: &'a [u8]) -> Result<(PairList, &'a [u8]), ParseError> {
         let mut pairs = vec![];
         let mut nbuf = buf;
         loop {
@@ -311,7 +317,7 @@ impl Parser {
         }
     }
 
-    fn parse_pair<'a>(&'a self, buf: &'a [u8]) -> Result<(Option<Pair>, &[u8]), ParseError> {
+    fn parse_pair<'a>(&'a self, buf: &'a [u8]) -> Result<(Option<Pair>, &'a [u8]), ParseError> {
         let (len, buf) = self.parse_int::<i32>(&buf)?;
         if len == 0 {
             return Ok((None, buf));
