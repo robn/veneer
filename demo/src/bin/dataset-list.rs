@@ -7,7 +7,6 @@
 use bytesize::ByteSize;
 use std::error::Error;
 use tabled::{builder::Builder, settings::Style};
-use veneer::zfs;
 
 enum Field<'a> {
     Bytes(&'a str),
@@ -31,7 +30,7 @@ const FIELDS: &[Field] = &[
 ];
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let z = zfs::open()?;
+    let z = veneer::zfs::open()?;
 
     let mut tb = Builder::default();
     tb.push_record(

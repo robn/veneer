@@ -4,14 +4,15 @@
 
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
-use crate::nvpair::{self, PairList};
 use crate::sys::{self, ZFSCommand};
+
 use std::error::Error;
-use std::ffi::{CStr, CString};
+use std::ffi::{c_ulong, CStr, CString};
 use std::fs::File;
 use std::io::Result as IOResult;
-use std::os::raw::c_ulong;
 use std::path::Path;
+
+use nvpair::PairList;
 
 #[derive(Debug)]
 pub struct Handle {

@@ -1,21 +1,3 @@
-[package]
-name = "veneer"
-version = "0.1.0"
-edition = "2024"
-license = "MPL-2.0"
-authors = ["Rob Norris <robn@despairlabs.com>"]
-repository = "https://github.com/robn/veneer"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-derivative = "2.2"
-num-traits = "0.2"
-num-derive = "0.4"
-desert = "2.0"
-
-[dev-dependencies]
-bytesize = "2.1"
-crossterm = "0.29"
-ratatui = "0.29"
-tabled = "0.20"
+[workspace]
+resolver = "3"
+members = [ "demo", "nvpair", "veneer", "veneer-ioctl"]

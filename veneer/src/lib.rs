@@ -4,10 +4,7 @@
 
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
-pub mod ioc;
-pub mod nvenums;
-mod nvpair;
-pub mod nvtypes;
-mod sys;
+mod nvenums;
+mod nvtypes;
 mod util;
 pub mod zfs;

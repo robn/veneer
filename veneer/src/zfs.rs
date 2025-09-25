@@ -4,11 +4,10 @@
 
 // Copyright (c) 2023, Rob Norris <robn@despairlabs.com>
 
-use crate::ioc;
 use crate::nvenums::VdevType;
-use crate::nvpair::PairList;
 use crate::nvtypes;
 use crate::util::AutoString;
+use nvpair::PairList;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::error::Error;
@@ -17,14 +16,16 @@ use std::io::Error as IOError;
 use std::io::ErrorKind as IOErrorKind;
 use std::rc::Rc;
 
+use veneer_ioctl::handle::Handle as IOCHandle;
+
 struct Handle {
-    ioc: RefCell<ioc::Handle>,
+    ioc: RefCell<IOCHandle>,
 }
 
 impl Handle {
     fn open() -> Result<Handle, Box<dyn Error>> {
         Ok(Handle {
-            ioc: RefCell::new(ioc::Handle::open()?),
+            ioc: RefCell::new(IOCHandle::open()?),
         })
     }
 

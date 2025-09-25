@@ -1,0 +1,11 @@
+[package]
+name = "veneer-ioctl"
+version = "0.1.0"
+edition = "2024"
+license = "MPL-2.0"
+authors = ["Rob Norris <robn@despairlabs.com>"]
+repository = "https://github.com/robn/veneer"
+
+[dependencies]
+derivative = "2.2"
+nvpair = { path = "../nvpair" }
