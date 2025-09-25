@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let z = zfs::open()?;
 
     let mut tb = Builder::default();
-    tb.set_header(
+    tb.push_record(
         ["name".to_string()]
             .into_iter()
             .chain(FIELDS.iter().map(|f| f.name().to_string()))
@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             .map(|s| match s {
                                 Field::Bytes(s) => dataset
                                     .get_prop_u64(s)
-                                    .map(|s| s.map(|n| ByteSize(n).to_string_as(false))),
+                                    .map(|s| s.map(|n| ByteSize::b(n).display().iec().to_string())),
                                 Field::String(s) => dataset.get_prop_string(s),
                             })
                             .map(|r| match r {

@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let z = zfs::open()?;
 
     let mut tb = Builder::default();
-    tb.set_header(["name", "type", "state", "read", "write", "cksum", "slow"]);
+    tb.push_record(["name", "type", "state", "read", "write", "cksum", "slow"]);
 
     fn push_vdev(
         tb: &mut Builder,

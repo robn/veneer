@@ -27,7 +27,7 @@ struct PoolState {
     write_history: Vec<u64>,
 }
 
-fn render_pool<B: Backend>(frame: &mut Frame<B>, rect: Rect, pool: &Pool, state: &PoolState) {
+fn render_pool(frame: &mut Frame, rect: Rect, pool: &Pool, state: &PoolState) {
     let block = Block::default().title(pool.name()).borders(Borders::ALL);
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .chain(iter::once(Constraint::Min(0)))
                         .collect::<Vec<_>>(),
                 )
-                .split(f.size());
+                .split(f.area());
             pool_state
                 .iter()
                 .zip(0..pool_state.len())
