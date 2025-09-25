@@ -7,9 +7,10 @@
 use desert::FromBytesLE;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use std::error::Error;
 use std::ffi::{CStr, CString};
 use std::fmt;
-use std::io::{self, Read};
+use std::io::{Error as IOError, Read};
 
 // data_type_t from include/sys/nvpair.h
 #[derive(Debug, FromPrimitive)]
@@ -190,7 +191,7 @@ pub enum ParseError {
     ShortRead,
     UnterminatedString,
     UnknownPairType(i32),
-    IOError(io::Error),
+    IOError(IOError),
 }
 
 impl fmt::Display for ParseError {
@@ -213,10 +214,10 @@ impl fmt::Display for ParseError {
     }
 }
 
-impl std::error::Error for ParseError {}
+impl Error for ParseError {}
 
-impl From<io::Error> for ParseError {
-    fn from(e: io::Error) -> Self {
+impl From<IOError> for ParseError {
+    fn from(e: IOError) -> Self {
         ParseError::IOError(e)
     }
 }
