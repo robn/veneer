@@ -8,13 +8,15 @@
 //     new versions, but not reduced. so we need to initialise to zero, and
 //     make sure we don't overrun, but its ok to come up short
 
+use enum_stringify::EnumStringify;
+
 // vdev_stat_t
 #[repr(C)]
 #[derive(Debug, Default)]
 pub struct VdevStats {
     pub timestamp: u64, // hrtime_t
-    pub state: u64,     // vdev_state_t
-    pub aux: u64,       // vdev_aux_t
+    pub state: VdevState,
+    pub aux: u64, // vdev_aux_t
     pub alloc: u64,
     pub space: u64,
     pub dspace: u64,
@@ -67,4 +69,19 @@ impl From<&[u64]> for VdevStats {
         }
         vs
     }
+}
+
+// vdev_state_t
+#[repr(u64)]
+#[derive(Debug, Default, EnumStringify)]
+pub enum VdevState {
+    #[default]
+    Unknown,
+    Closed,
+    Offline,
+    Removed,
+    CantOpen,
+    Faulted,
+    Degraded,
+    Healthy,
 }
