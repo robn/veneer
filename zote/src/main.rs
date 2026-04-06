@@ -15,6 +15,9 @@ struct Args {
 enum Command {
     /// Display the version of OpenZFS in use
     Version(Version),
+
+    /// Pool operations
+    Pool(Pool),
 }
 
 fn main() {
@@ -22,5 +25,6 @@ fn main() {
 
     match args.cmd {
         Command::Version(cmd) => cmd.run(),
+        Command::Pool(cmd) => cmd.run(),
     }
 }
