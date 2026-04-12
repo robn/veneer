@@ -8,4 +8,5 @@ repository = "https://github.com/robn/veneer"
 
 [dependencies]
 derivative = "2.2"
+error_set = "0.9"
 nvpair = { path = "../nvpair" }

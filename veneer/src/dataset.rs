@@ -5,9 +5,8 @@
 // Copyright (c) 2023-2025, Rob Norris <robn@despairlabs.com>
 
 use crate::util::AutoString;
-use crate::Handle;
+use crate::{Error, Handle};
 use nvpair::PairList;
-use std::error::Error;
 use std::rc::Rc;
 
 pub struct Dataset {
@@ -24,16 +23,16 @@ impl Dataset {
         self.name.to_string()
     }
 
-    fn get_prop(&self, prop: &str) -> Result<Option<PairList>, Box<dyn Error>> {
+    fn get_prop(&self, prop: &str) -> Result<Option<PairList>, Error> {
         let dslist = self.handle.get_dataset(&self.name)?;
         Ok(dslist.get_list(prop).cloned())
     }
 
-    pub fn get_prop_u64(&self, prop: &str) -> Result<Option<u64>, Box<dyn Error>> {
+    pub fn get_prop_u64(&self, prop: &str) -> Result<Option<u64>, Error> {
         Ok(self.get_prop(prop)?.and_then(|l| l.get_u64("value")))
     }
 
-    pub fn get_prop_string(&self, prop: &str) -> Result<Option<String>, Box<dyn Error>> {
+    pub fn get_prop_string(&self, prop: &str) -> Result<Option<String>, Error> {
         Ok(self
             .get_prop(prop)?
             .and_then(|l| l.get_c_string("value"))

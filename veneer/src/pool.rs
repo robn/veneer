@@ -4,12 +4,10 @@
 
 // Copyright (c) 2023-2025, Rob Norris <robn@despairlabs.com>
 
+use crate::error::{Error, ResponseError};
 use crate::util::AutoString;
 use crate::{Dataset, Handle, Vdev};
 
-use std::error::Error;
-use std::io::Error as IOError;
-use std::io::ErrorKind as IOErrorKind;
 use std::rc::Rc;
 
 pub struct Pool {
@@ -26,15 +24,17 @@ impl Pool {
         self.name.to_string()
     }
 
-    pub fn root_vdev(&self) -> Result<Vdev, Box<dyn Error>> {
+    pub fn root_vdev(&self) -> Result<Vdev, Error> {
         let pl = self.handle.get_pool(&self.name)?;
         let vl = pl
             .get_list("vdev_tree")
-            .ok_or_else(|| IOError::from(IOErrorKind::NotFound))?;
+            .ok_or_else(|| ResponseError::MissingField {
+                field: "vdev_tree".into(),
+            })?;
         Vdev::new(self.handle.clone(), self.name.clone(), vl)
     }
 
-    pub fn datasets(&self) -> Result<Vec<Dataset>, Box<dyn Error>> {
+    pub fn datasets(&self) -> Result<Vec<Dataset>, Error> {
         Ok(self
             .handle
             .get_dataset_list()?

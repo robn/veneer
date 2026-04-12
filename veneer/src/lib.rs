@@ -4,6 +4,7 @@
 
 // Copyright (c) 2023-2025, Rob Norris <robn@despairlabs.com>
 
+mod error;
 mod nvenums;
 mod nvtypes;
 mod util;
@@ -14,14 +15,14 @@ mod host;
 mod pool;
 mod vdev;
 
+pub use error::Error;
+
 pub use dataset::Dataset;
 pub use handle::Handle;
 pub use host::Host;
 pub use pool::Pool;
 pub use vdev::Vdev;
 
-use std::error::Error;
-
-pub fn open() -> Result<Host, Box<dyn Error>> {
+pub fn open() -> Result<Host, Error> {
     Host::open()
 }

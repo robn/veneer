@@ -8,3 +8,11 @@ mod handle;
 mod sys;
 
 pub use handle::Handle;
+
+error_set::error_set! {
+    Error := {
+        NVParseError(nvpair::ParseError),
+        NameParseError(std::ffi::FromBytesUntilNulError),
+        IOError(std::io::Error),
+    }
+}

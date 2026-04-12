@@ -622,6 +622,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "error_set"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "769f9f87d305e0d64bcb6a8459021e9be27e145c14b8287abcc328954f92e552"
+dependencies = [
+ "error_set_impl",
+]
+
+[[package]]
+name = "error_set_impl"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31799fcd4d4ee7ad6af27ca9ec307733d57cce0e137e38dec7e196b2ae75dd2c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "regex",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "euclid"
 version = "0.22.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2072,6 +2093,7 @@ name = "veneer"
 version = "0.1.0"
 dependencies = [
  "enum_stringify",
+ "error_set",
  "nvpair",
  "veneer-ioctl",
 ]
@@ -2081,6 +2103,7 @@ name = "veneer-ioctl"
 version = "0.1.0"
 dependencies = [
  "derivative",
+ "error_set",
  "nvpair",
 ]
 

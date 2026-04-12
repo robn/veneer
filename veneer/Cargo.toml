@@ -8,5 +8,6 @@ repository = "https://github.com/robn/veneer"
 
 [dependencies]
 enum_stringify = "0.6"
+error_set = "0.9"
 nvpair = { path = "../nvpair" }
 veneer-ioctl = { path = "../veneer-ioctl" }

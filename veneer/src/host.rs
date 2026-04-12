@@ -4,19 +4,18 @@
 
 // Copyright (c) 2023-2025, Rob Norris <robn@despairlabs.com>
 
-use crate::{Handle, Pool};
+use crate::{Error, Handle, Pool};
 
-use std::error::Error;
 use std::rc::Rc;
 
 pub struct Host(Rc<Handle>);
 
 impl Host {
-    pub(crate) fn open() -> Result<Host, Box<dyn Error>> {
+    pub(crate) fn open() -> Result<Host, Error> {
         Ok(Host(Rc::new(Handle::open()?)))
     }
 
-    pub fn pools(&self) -> Result<Vec<Pool>, Box<dyn Error>> {
+    pub fn pools(&self) -> Result<Vec<Pool>, Error> {
         Ok(self
             .0
             .get_config()?

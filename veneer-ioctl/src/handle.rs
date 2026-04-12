@@ -5,11 +5,10 @@
 // Copyright (c) 2023-2025, Rob Norris <robn@despairlabs.com>
 
 use crate::sys::{self, ZFSCommand};
+use crate::Error;
 
-use std::error::Error;
 use std::ffi::{c_ulong, CStr, CString};
 use std::fs::File;
-use std::io::Result as IOResult;
 use std::path::Path;
 
 use nvpair::PairList;
@@ -28,13 +27,13 @@ pub struct IterState {
     pub cookie: u64,
 }
 
-type IOCResult = Result<(), Box<dyn Error>>;
-type IOCResultList = Result<PairList, Box<dyn Error>>;
-type IOCResultIter = Result<IterState, Box<dyn Error>>;
+type IOCResult = Result<(), Error>;
+type IOCResultList = Result<PairList, Error>;
+type IOCResultIter = Result<IterState, Error>;
 
 impl Handle {
     // open the control device node. you only need this if its not on /dev/zfs
-    pub fn open_dev<P: AsRef<Path>>(path: P) -> IOResult<Handle> {
+    pub fn open_dev<P: AsRef<Path>>(path: P) -> Result<Handle, Error> {
         Ok(Handle {
             dev: File::open(path)?,
             cmd: Default::default(),
@@ -43,7 +42,7 @@ impl Handle {
     }
 
     // open the control device via /dev/zfs
-    pub fn open() -> IOResult<Handle> {
+    pub fn open() -> Result<Handle, Error> {
         Handle::open_dev("/dev/zfs")
     }
 

@@ -7,9 +7,8 @@
 use crate::nvenums::VdevType;
 use crate::nvtypes;
 use crate::util::AutoString;
-use crate::Handle;
+use crate::{Error, Handle};
 use nvpair::PairList;
-use std::error::Error;
 use std::rc::Rc;
 
 pub struct Vdev {
@@ -25,11 +24,7 @@ pub struct Vdev {
 }
 
 impl Vdev {
-    pub(crate) fn new(
-        handle: Rc<Handle>,
-        pool: AutoString,
-        vl: &PairList,
-    ) -> Result<Vdev, Box<dyn Error>> {
+    pub(crate) fn new(handle: Rc<Handle>, pool: AutoString, vl: &PairList) -> Result<Vdev, Error> {
         let id = vl.get_u64("id").unwrap_or(0);
         let guid = vl.get_u64("guid").unwrap_or(0);
 
@@ -88,7 +83,7 @@ impl Vdev {
         }
     }
 
-    pub fn children(&self) -> Result<Vec<Vdev>, Box<dyn Error>> {
+    pub fn children(&self) -> Result<Vec<Vdev>, Error> {
         Ok(self
             .handle
             .get_vdev(&self.pool, self.guid)?
@@ -100,7 +95,7 @@ impl Vdev {
             .collect())
     }
 
-    pub fn stats(&self) -> Result<nvtypes::VdevStats, Box<dyn Error>> {
+    pub fn stats(&self) -> Result<nvtypes::VdevStats, Error> {
         Ok(self
             .handle
             .get_vdev(&self.pool, self.guid)?
