@@ -23,6 +23,9 @@ pub use host::Host;
 pub use pool::Pool;
 pub use vdev::Vdev;
 
+// XXX not sure about exposing these directly, convenient for now
+pub use nvtypes::VdevState;
+
 pub fn open() -> Result<Host, Error> {
     Host::open()
 }

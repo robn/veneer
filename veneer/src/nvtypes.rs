@@ -73,7 +73,7 @@ impl From<&[u64]> for VdevStats {
 
 // vdev_state_t
 #[repr(u64)]
-#[derive(Debug, Default, EnumStringify)]
+#[derive(Copy, Clone, Debug, Default, EnumStringify)]
 pub enum VdevState {
     #[default]
     Unknown,
