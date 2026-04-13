@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bytesize = "2.3"
 iocraft = "0.8"
 smol = "2.0"
 veneer = { path = "../veneer" }

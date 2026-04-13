@@ -1,4 +1,7 @@
+use bytesize::ByteSize;
 use iocraft::prelude::*;
+use std::collections::BTreeMap;
+use veneer::{Error, VdevState};
 
 // Minimal theme stuff ripped form ratatui_themes, because getting the traits
 // right for converting Color from ratatui -> iocraft is more
@@ -78,21 +81,23 @@ impl Theme {
 }
 
 #[derive(Default, Props)]
-struct DashBoxProps {
+struct DashBoxProps<'a> {
+    children: Vec<AnyElement<'a>>,
     title: String,
 }
 
 #[component]
-fn DashBox(props: &DashBoxProps, hooks: Hooks) -> impl Into<AnyElement<'static>> {
+fn DashBox(props: &mut DashBoxProps<'static>, hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let palette = hooks.use_context::<Theme>().palette();
 
     element! {
         View(
             background_color: palette.bg,
-            border_style: BorderStyle::DoubleLeftRight,
+            border_style: BorderStyle::Single,
             border_color: palette.accent,
             flex_direction: FlexDirection::Column,
-            flex_grow: 1.0,
+            padding_left: 1,
+            padding_right: 1,
         ) {
             View(margin_top: -1) {
                 Text(
@@ -101,29 +106,106 @@ fn DashBox(props: &DashBoxProps, hooks: Hooks) -> impl Into<AnyElement<'static>>
                     wrap: TextWrap::NoWrap,
                 )
             }
+            #(std::mem::take(&mut props.children))
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct PoolData {
+    name: String,
+    state: VdevState,
+    size: u64,
+    alloc: u64,
+}
+
+#[derive(Clone, Debug, Default)]
+struct DashData {
+    pools: BTreeMap<String, PoolData>,
+}
+
+impl DashData {
+    async fn fetch() -> Result<Self, Error> {
+        let z = veneer::open()?;
+
+        let mut pools = BTreeMap::default();
+        for pool in z.pools()? {
+            let root = pool.root_vdev()?;
+            let stats = root.stats()?;
+
+            let data = PoolData {
+                name: pool.name(),
+                state: stats.state,
+                size: stats.space,
+                alloc: stats.alloc,
+            };
+
+            pools.insert(pool.name(), data);
+        }
+
+        Ok(DashData { pools })
+    }
+}
+
+#[derive(Default, Props)]
+struct PoolDataViewProps {
+    data: PoolData,
+}
+
+#[component]
+fn PoolDataView(props: &PoolDataViewProps, hooks: Hooks) -> impl Into<AnyElement<'static>> {
+    let palette = hooks.use_context::<Theme>().palette();
+
+    element! {
+        DashBox(title: &props.data.name) {
             View(
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                height: 3,
-                flex_grow: 1.0,
+                flex_direction: FlexDirection::Row,
+                justify_content: JustifyContent::SpaceBetween,
             ) {
-                Text(
-                    content: "oh no",
-                    color: palette.fg,
-                    weight: Weight::Bold,
+                View(
                 )
+                View(
+                    flex_direction: FlexDirection::Column,
+                ) {
+                    Text(content: props.data.state.to_string(), color: palette.fg)
+                    Text(
+                        content: format!("Size: {}", ByteSize::b(props.data.size)),
+                        color: palette.fg,
+                    )
+                    Text(
+                        content: format!("Used: {}", ByteSize::b(props.data.alloc)),
+                        color: palette.fg,
+                    )
+                }
             }
         }
     }
+}
+
+enum DashState {
+    Init,
+    Loading,
+    Loaded(Result<DashData, Error>),
 }
 
 #[component]
 fn Dash(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let (width, height) = hooks.use_terminal_size();
     let mut system = hooks.use_context_mut::<SystemContext>();
-    let mut exit = hooks.use_state(|| false);
     let mut theme = hooks.use_state(|| Theme::default());
 
+    let mut state = hooks.use_state(|| DashState::Init);
+    hooks.use_future(async move {
+        loop {
+            if !matches!(*state.read(), DashState::Loading) {
+                state.set(DashState::Loading);
+                state.set(DashState::Loaded(DashData::fetch().await));
+            }
+            smol::Timer::after(std::time::Duration::from_secs(1)).await;
+        }
+    });
+
+    let mut exit = hooks.use_state(|| false);
     hooks.use_terminal_events({
         move |event| match event {
             TerminalEvent::Key(KeyEvent { code, kind, .. }) if kind != KeyEventKind::Release => {
@@ -136,7 +218,6 @@ fn Dash(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
             _ => {}
         }
     });
-
     if exit.get() {
         system.exit();
     }
@@ -144,22 +225,39 @@ fn Dash(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     element! {
         View(
             width,
-            height: height,
+            height,
             background_color: theme.get().palette().bg,
             flex_direction: FlexDirection::Column,
-            gap: 1,
         ) {
-            View(
-                flex_grow: 1.0,
-            ) {
-                View(
-                    flex_grow: 1.0,
-                ) {
-                    ContextProvider(value: Context::owned(theme.get())) {
-                        DashBox(title: "pool")
+            #(match &*state.read() {
+                DashState::Loaded(Ok(data)) => element! {
+                    Fragment {
+                        #(data.pools.iter().map(|(name,data)| {
+                            element! {
+                                ContextProvider(value: Context::owned(theme.get())) {
+                                    PoolDataView(key: name.clone(), data: data.clone())
+                                }
+                            }
+                        }))
                     }
-                }
-            }
+                }.into_any(),
+                DashState::Loaded(Err(err)) => element! {
+                    View(
+                        flex_direction: FlexDirection::Column,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        width: 100pct,
+                        height: 100pct,
+                        padding: 2,
+                    ) {
+                        Text(content: "Error!", weight: Weight::Bold, color: Color::Red)
+                        Text(content: format!("{:#}", err))
+                    }
+                }.into_any(),
+                _ => element! {
+                    Text(content: "loading")
+                }.into_any(),
+            })
         }
     }
 }

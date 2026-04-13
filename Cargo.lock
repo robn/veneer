@@ -2426,6 +2426,7 @@ dependencies = [
 name = "zdash"
 version = "0.1.0"
 dependencies = [
+ "bytesize",
  "iocraft",
  "smol",
  "veneer",
