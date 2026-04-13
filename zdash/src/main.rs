@@ -80,58 +80,87 @@ impl Theme {
     }
 }
 
-struct History(Vec<u64>);
-
-impl Default for History {
-    fn default() -> Self {
-        History(std::iter::repeat(0).take(200).collect())
-    }
-}
-
-impl History {
-    fn record(&mut self, v: u64) -> &Self {
-        self.0.remove(0);
-        self.0.push(v);
-        self
-    }
-
-    fn scale_to(&self, max: u64) -> Vec<u64> {
-        let sf = (*(self.0.iter().max().unwrap_or(&0)) as f64) / (max as f64);
-        self.0.iter().map(|&v| ((v as f64) / sf) as u64).collect()
-    }
-}
-
 const BLOCKS: &'static [char] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
 
 #[derive(Default, Props)]
-struct DashSparklineProps {
+struct SparklineProps {
     value: u64,
 }
 
-#[component]
-fn DashSparkline(props: &DashSparklineProps, mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
-    let mut prev = hooks.use_ref(|| props.value);
-    let diff = props.value - prev.get();
-    prev.set(props.value);
+struct Sparkline {
+    prev: Option<u64>,
+    history: Vec<u64>,
+}
 
-    let mut history = hooks.use_ref(|| History::default());
+impl Default for Sparkline {
+    fn default() -> Self {
+        Sparkline {
+            prev: None,
+            history: std::iter::repeat(0).take(256).collect(),
+            //..Default::default()
+        }
+    }
+}
 
-    let sparkline: String = history
-        .write()
-        .record(diff)
-        .scale_to((BLOCKS.len() - 1) as u64)
-        .iter()
-        .map(|&v| {
-            assert!(v < 9);
-            BLOCKS[v as usize]
-        })
-        .collect();
+impl Component for Sparkline {
+    type Props<'a> = SparklineProps;
 
-    element! {
-        Text(
-            content: sparkline,
-            wrap: TextWrap::NoWrap
-        )
+    fn new(_props: &Self::Props<'_>) -> Self {
+        Self::default()
+    }
+
+    fn update(
+        &mut self,
+        props: &mut Self::Props<'_>,
+        _hooks: Hooks,
+        updater: &mut ComponentUpdater,
+    ) {
+        let diff = self.prev.map(|v| props.value - v).unwrap_or(0);
+
+        self.prev.replace(props.value);
+
+        self.history.remove(0);
+        self.history.push(diff);
+
+        updater.set_measure_func(Box::new(move |known_size, available_space, _style| {
+            // return is a taffy::geometry::Size<f32>, which we don't have named access to.
+            // `known_size` however is a taffy::geometry::Size<Option<f32>> and has deriving
+            // constructors, so we can work around it with this nonsense
+            let w = if available_space.width.is_definite() {
+                available_space.width.unwrap().min(256.0)
+            } else if available_space.width.compute_free_space(1.0) < 1.0 {
+                // MinContent
+                8.0 as _
+            } else {
+                // MaxContent
+                256.0 as _
+            };
+            known_size
+                .map_width(|_| Some(w))
+                .map_height(|_| Some(1 as _))
+                .map(|v| v.unwrap())
+        }));
+    }
+
+    fn draw(&mut self, drawer: &mut ComponentDrawer<'_>) {
+        let width = drawer.layout().size.width as usize;
+
+        let (_, w) = self.history.split_at(self.history.len() - width);
+
+        let sf = (*(w.iter().max().unwrap_or(&0)) as f64) / ((BLOCKS.len() - 1) as f64);
+
+        let content: String = w
+            .iter()
+            .map(|&v| ((v as f64) / sf) as usize)
+            .map(|v| {
+                assert!(v < 9);
+                BLOCKS[v]
+            })
+            .collect();
+
+        drawer
+            .canvas()
+            .set_text(0, 0, &content, CanvasTextStyle::default());
     }
 }
 
@@ -250,17 +279,21 @@ fn PoolDataView(props: &PoolDataViewProps, hooks: Hooks) -> impl Into<AnyElement
                     //background_color: Color::Rgb { r: 128, g: 0, b: 0 },
                     flex_direction: FlexDirection::Column,
                 ) {
-                    Text(content: "read", wrap: TextWrap::NoWrap)
-                    Text(content: "write", wrap: TextWrap::NoWrap)
+                    Text(content: "Read", wrap: TextWrap::NoWrap)
+                    Text(content: "Write", wrap: TextWrap::NoWrap)
                 }
                 View(
                     //background_color: Color::Rgb { r: 0, g: 128, b: 0 },
                     flex_direction: FlexDirection::Column,
                     flex_grow: 1.0,
-                    overflow_x: Overflow::Hidden,
+                    //overflow_x: Overflow::Hidden,
                 ) {
-                    DashSparkline(value: props.data.read)
-                    DashSparkline(value: props.data.write)
+                    View(background_color: palette.selection) {
+                        Sparkline(value: props.data.read)
+                    }
+                    View(background_color: palette.selection) {
+                        Sparkline(value: props.data.write)
+                    }
                 }
                 View(
                     //background_color: Color::Rgb { r: 0, g: 0, b: 128 },
