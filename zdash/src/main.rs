@@ -80,6 +80,83 @@ impl Theme {
     }
 }
 
+struct History(Vec<u64>);
+
+impl Default for History {
+    fn default() -> Self {
+        History(std::iter::repeat(0).take(200).collect())
+    }
+}
+
+impl History {
+    fn record(&mut self, v: u64) -> &Self {
+        self.0.remove(0);
+        self.0.push(v);
+        self
+    }
+
+    fn scale_to(&self, max: u64) -> Vec<u64> {
+        let sf = (*(self.0.iter().max().unwrap_or(&0)) as f64) / (max as f64);
+        self.0.iter().map(|&v| ((v as f64) / sf) as u64).collect()
+    }
+}
+
+const BLOCKS: &'static [char] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+
+#[derive(Default, Props)]
+struct DashSparklineProps {
+    value: u64,
+}
+
+#[component]
+fn DashSparkline(props: &DashSparklineProps, mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
+    let mut prev = hooks.use_ref(|| props.value);
+    let diff = props.value - prev.get();
+    prev.set(props.value);
+
+    let mut history = hooks.use_ref(|| History::default());
+
+    let sparkline: String = history
+        .write()
+        .record(diff)
+        .scale_to((BLOCKS.len() - 1) as u64)
+        .iter()
+        .map(|&v| {
+            assert!(v < 9);
+            BLOCKS[v as usize]
+        })
+        .collect();
+
+    element! {
+        Text(
+            content: sparkline,
+            wrap: TextWrap::NoWrap
+        )
+    }
+}
+
+#[derive(Default, Props)]
+struct DashMeterProps {
+    value: u64,
+    color: Option<Color>,
+}
+
+#[component]
+fn DashMeter(props: &DashMeterProps, mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
+    let mut prev = hooks.use_ref(|| props.value);
+    let diff = props.value - prev.get();
+    prev.set(props.value);
+
+    element! {
+        Text(
+            content: format!("{}", ByteSize::b(diff)),
+            color: props.color,
+            align: TextAlign::Center,
+            wrap: TextWrap::NoWrap
+        )
+    }
+}
+
 #[derive(Default, Props)]
 struct DashBoxProps<'a> {
     children: Vec<AnyElement<'a>>,
@@ -117,6 +194,9 @@ struct PoolData {
     state: VdevState,
     size: u64,
     alloc: u64,
+    read: u64,
+    write: u64,
+    _wat: String,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -138,6 +218,9 @@ impl DashData {
                 state: stats.state,
                 size: stats.space,
                 alloc: stats.alloc,
+                read: stats.bytes[1],
+                write: stats.bytes[2],
+                _wat: format!("{:?}", stats),
             };
 
             pools.insert(pool.name(), data);
@@ -160,24 +243,54 @@ fn PoolDataView(props: &PoolDataViewProps, hooks: Hooks) -> impl Into<AnyElement
         DashBox(title: &props.data.name) {
             View(
                 flex_direction: FlexDirection::Row,
-                justify_content: JustifyContent::SpaceBetween,
+                justify_content: JustifyContent::Stretch,
+                gap: 1,
             ) {
                 View(
-                )
-                View(
+                    //background_color: Color::Rgb { r: 128, g: 0, b: 0 },
                     flex_direction: FlexDirection::Column,
                 ) {
-                    Text(content: props.data.state.to_string(), color: palette.fg)
+                    Text(content: "read", wrap: TextWrap::NoWrap)
+                    Text(content: "write", wrap: TextWrap::NoWrap)
+                }
+                View(
+                    //background_color: Color::Rgb { r: 0, g: 128, b: 0 },
+                    flex_direction: FlexDirection::Column,
+                    flex_grow: 1.0,
+                    overflow_x: Overflow::Hidden,
+                ) {
+                    DashSparkline(value: props.data.read)
+                    DashSparkline(value: props.data.write)
+                }
+                View(
+                    //background_color: Color::Rgb { r: 0, g: 0, b: 128 },
+                    flex_direction: FlexDirection::Column,
+                    min_width: 9,
+                ) {
+                    DashMeter(value: props.data.read, color: palette.fg)
+                    DashMeter(value: props.data.write, color: palette.fg)
+                }
+                View(
+                    //background_color: Color::Rgb { r: 128, g: 0, b: 128 },
+                    flex_direction: FlexDirection::Column,
+                ) {
+                    Text(
+                        content: props.data.state.to_string(),
+                        color: palette.fg,
+                        wrap: TextWrap::NoWrap)
                     Text(
                         content: format!("Size: {}", ByteSize::b(props.data.size)),
                         color: palette.fg,
+                        wrap: TextWrap::NoWrap,
                     )
                     Text(
                         content: format!("Used: {}", ByteSize::b(props.data.alloc)),
                         color: palette.fg,
+                        wrap: TextWrap::NoWrap,
                     )
                 }
             }
+            //Text(content: format!("{:#?}", &props.data._wat), color: palette.secondary)
         }
     }
 }
