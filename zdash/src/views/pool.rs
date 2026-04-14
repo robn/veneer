@@ -1,0 +1,81 @@
+use crate::{
+    components::{Meter, Panel, Sparkline},
+    PoolData, Theme,
+};
+use bytesize::ByteSize;
+use iocraft::{
+    component,
+    components::{Text, TextWrap, View},
+    element,
+    hooks::UseContext,
+    AnyElement, FlexDirection, Hooks, JustifyContent, Props,
+};
+
+#[derive(Default, Props)]
+pub(crate) struct PoolViewProps {
+    pub data: PoolData,
+}
+
+#[component]
+pub(crate) fn PoolView(props: &PoolViewProps, hooks: Hooks) -> impl Into<AnyElement<'static>> {
+    let palette = hooks.use_context::<Theme>().palette();
+
+    element! {
+        Panel(title: &props.data.name) {
+            View(
+                flex_direction: FlexDirection::Row,
+                justify_content: JustifyContent::Stretch,
+                gap: 1,
+            ) {
+                View(
+                    //background_color: Color::Rgb { r: 128, g: 0, b: 0 },
+                    flex_direction: FlexDirection::Column,
+                ) {
+                    Text(content: "Read", wrap: TextWrap::NoWrap)
+                    Text(content: "Write", wrap: TextWrap::NoWrap)
+                }
+                View(
+                    //background_color: Color::Rgb { r: 0, g: 128, b: 0 },
+                    flex_direction: FlexDirection::Column,
+                    flex_grow: 1.0,
+                    //overflow_x: Overflow::Hidden,
+                ) {
+                    View(background_color: palette.selection) {
+                        Sparkline(value: props.data.read)
+                    }
+                    View(background_color: palette.selection) {
+                        Sparkline(value: props.data.write)
+                    }
+                }
+                View(
+                    //background_color: Color::Rgb { r: 0, g: 0, b: 128 },
+                    flex_direction: FlexDirection::Column,
+                    min_width: 9,
+                ) {
+                    Meter(value: props.data.read, color: palette.fg)
+                    Meter(value: props.data.write, color: palette.fg)
+                }
+                View(
+                    //background_color: Color::Rgb { r: 128, g: 0, b: 128 },
+                    flex_direction: FlexDirection::Column,
+                ) {
+                    Text(
+                        content: props.data.state.to_string(),
+                        color: palette.fg,
+                        wrap: TextWrap::NoWrap)
+                    Text(
+                        content: format!("Size: {}", ByteSize::b(props.data.size)),
+                        color: palette.fg,
+                        wrap: TextWrap::NoWrap,
+                    )
+                    Text(
+                        content: format!("Used: {}", ByteSize::b(props.data.alloc)),
+                        color: palette.fg,
+                        wrap: TextWrap::NoWrap,
+                    )
+                }
+            }
+            //Text(content: format!("{:#?}", &props.data._wat), color: palette.secondary)
+        }
+    }
+}
