@@ -4,17 +4,8 @@
 
 // Copyright (c) 2023-2026, Rob Norris <robn@despairlabs.com>
 
-mod label;
-pub(crate) use label::*;
+use veneer::Error;
 
-mod meter;
-pub(crate) use meter::*;
-
-mod panel;
-pub(crate) use panel::*;
-
-mod props_provider;
-pub(crate) use props_provider::*;
-
-mod sparkline;
-pub(crate) use sparkline::*;
+pub(crate) trait Loader: Sized {
+    fn load() -> impl Future<Output = Result<Self, Error>> + Send;
+}

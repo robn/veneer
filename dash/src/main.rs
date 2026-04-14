@@ -6,6 +6,7 @@
 
 mod components;
 mod data;
+mod loader;
 mod theme;
 mod views;
 
@@ -13,17 +14,32 @@ use iocraft::prelude::*;
 use std::collections::BTreeMap;
 use veneer::Error;
 
+use crate::components::PropsProvider;
 use crate::data::PoolData;
+use crate::loader::Loader;
 use crate::theme::Theme;
 use crate::views::PoolView;
 
-#[derive(Clone, Debug, Default)]
-struct DashData {
+#[derive(Default, Clone, Props)]
+struct DashPoolViewProps {
     pools: BTreeMap<String, PoolData>,
 }
 
-impl DashData {
-    async fn fetch() -> Result<Self, Error> {
+#[component]
+fn DashPoolView(props: &DashPoolViewProps) -> impl Into<AnyElement<'static>> {
+    element! {
+        Fragment {
+            #(props.pools.iter().map(|(name, data)| {
+                element! {
+                    PoolView(key: name.clone(), data: data.clone())
+                }
+            }))
+        }
+    }
+}
+
+impl Loader for DashPoolViewProps {
+    async fn load() -> Result<Self, Error> {
         let z = veneer::open()?;
 
         let mut pools = BTreeMap::default();
@@ -44,14 +60,8 @@ impl DashData {
             pools.insert(pool.name(), data);
         }
 
-        Ok(DashData { pools })
+        Ok(Self { pools })
     }
-}
-
-enum DashState {
-    Init,
-    Loading,
-    Loaded(Result<DashData, Error>),
 }
 
 #[component]
@@ -59,17 +69,6 @@ fn Dash(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let (width, height) = hooks.use_terminal_size();
     let mut system = hooks.use_context_mut::<SystemContext>();
     let mut theme = hooks.use_state(|| Theme::default());
-
-    let mut state = hooks.use_state(|| DashState::Init);
-    hooks.use_future(async move {
-        loop {
-            if !matches!(*state.read(), DashState::Loading) {
-                state.set(DashState::Loading);
-                state.set(DashState::Loaded(DashData::fetch().await));
-            }
-            smol::Timer::after(std::time::Duration::from_secs(1)).await;
-        }
-    });
 
     let mut exit = hooks.use_state(|| false);
     hooks.use_terminal_events({
@@ -96,33 +95,7 @@ fn Dash(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                 background_color: theme.get().palette().background,
                 flex_direction: FlexDirection::Column,
             ) {
-                #(match &*state.read() {
-                    DashState::Loaded(Ok(data)) => element! {
-                        Fragment {
-                            #(data.pools.iter().map(|(name,data)| {
-                                element! {
-                                    PoolView(key: name.clone(), data: data.clone())
-                                }
-                            }))
-                        }
-                    }.into_any(),
-                    DashState::Loaded(Err(err)) => element! {
-                        View(
-                            flex_direction: FlexDirection::Column,
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            width: 100pct,
-                            height: 100pct,
-                            padding: 2,
-                        ) {
-                            Text(content: "Error!", weight: Weight::Bold, color: Color::Red)
-                            Text(content: format!("{:#}", err))
-                        }
-                    }.into_any(),
-                    _ => element! {
-                        Text(content: "loading")
-                    }.into_any(),
-                })
+                PropsProvider<DashPoolView>
             }
         }
     }
