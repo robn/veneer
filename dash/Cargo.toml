@@ -8,6 +8,7 @@ repository = "https://github.com/robn/veneer"
 
 [dependencies]
 bytesize = "2.3"
+catppuccin = "2.7"
 #iocraft = "0.8"
 iocraft = { git = "https://github.com/robn/iocraft.git", branch = "text-align-overflow" }
 smol = "2.0"
