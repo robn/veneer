@@ -22,9 +22,9 @@ pub(crate) fn Panel(
 
     element! {
         View(
-            background_color: palette.bg,
+            background_color: palette.background,
             border_style: BorderStyle::Single,
-            border_color: palette.accent,
+            border_color: palette.border,
             flex_direction: FlexDirection::Column,
             padding_left: 1,
             padding_right: 1,
@@ -32,7 +32,7 @@ pub(crate) fn Panel(
             View(margin_top: -1) {
                 Text(
                     content: format!(" {} ", &props.title),
-                    color: palette.accent,
+                    color: palette.border,
                     wrap: TextWrap::NoWrap,
                 )
             }

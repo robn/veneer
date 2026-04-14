@@ -40,10 +40,10 @@ pub(crate) fn PoolView(props: &PoolViewProps, hooks: Hooks) -> impl Into<AnyElem
                     flex_grow: 1.0,
                     //overflow_x: Overflow::Hidden,
                 ) {
-                    View(background_color: palette.selection) {
+                    View(background_color: palette.gutter) {
                         Sparkline(value: props.data.read)
                     }
-                    View(background_color: palette.selection) {
+                    View(background_color: palette.gutter) {
                         Sparkline(value: props.data.write)
                     }
                 }
@@ -52,8 +52,8 @@ pub(crate) fn PoolView(props: &PoolViewProps, hooks: Hooks) -> impl Into<AnyElem
                     flex_direction: FlexDirection::Column,
                     min_width: 9,
                 ) {
-                    Meter(value: props.data.read, color: palette.fg)
-                    Meter(value: props.data.write, color: palette.fg)
+                    Meter(value: props.data.read, color: palette.text)
+                    Meter(value: props.data.write, color: palette.text)
                 }
                 View(
                     //background_color: Color::Rgb { r: 128, g: 0, b: 128 },
@@ -61,16 +61,16 @@ pub(crate) fn PoolView(props: &PoolViewProps, hooks: Hooks) -> impl Into<AnyElem
                 ) {
                     Text(
                         content: props.data.state.to_string(),
-                        color: palette.fg,
+                        color: palette.text,
                         wrap: TextWrap::NoWrap)
                     Text(
                         content: format!("Size: {}", ByteSize::b(props.data.size)),
-                        color: palette.fg,
+                        color: palette.text,
                         wrap: TextWrap::NoWrap,
                     )
                     Text(
                         content: format!("Used: {}", ByteSize::b(props.data.alloc)),
-                        color: palette.fg,
+                        color: palette.text,
                         wrap: TextWrap::NoWrap,
                     )
                 }

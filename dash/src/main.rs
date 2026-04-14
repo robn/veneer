@@ -86,7 +86,7 @@ fn Dash(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         View(
             width,
             height,
-            background_color: theme.get().palette().bg,
+            background_color: theme.get().palette().background,
             flex_direction: FlexDirection::Column,
         ) {
             #(match &*state.read() {

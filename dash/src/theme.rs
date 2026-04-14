@@ -2,10 +2,17 @@ use catppuccin::{ColorName, FlavorName};
 use iocraft::Color;
 
 pub(crate) struct Palette {
-    pub accent: Color,
-    pub bg: Color,
-    pub fg: Color,
-    pub selection: Color,
+    // general background (whole window)
+    pub background: Color,
+
+    // general text */
+    pub text: Color,
+
+    // background for moving/focus elements (eg gutters)
+    pub gutter: Color,
+
+    // panel borders, frames
+    pub border: Color,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -31,11 +38,12 @@ impl Theme {
             Theme::Light => FlavorName::Latte,
         };
 
+        // https://github.com/catppuccin/catppuccin/blob/main/docs/style-guide.md
         Palette {
-            accent: color(f, ColorName::Blue),
-            bg: color(f, ColorName::Base),
-            fg: color(f, ColorName::Text),
-            selection: color(f, ColorName::Surface0),
+            background: color(f, ColorName::Base), // General -> Background Pane
+            gutter: color(f, ColorName::Surface0), // General -> Surface Elements
+            text: color(f, ColorName::Text),       // General -> Body Copy
+            border: color(f, ColorName::Lavender), // Terminal -> Active Border
         }
     }
 
