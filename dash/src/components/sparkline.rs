@@ -1,15 +1,17 @@
-use iocraft::{CanvasTextStyle, Component, ComponentDrawer, ComponentUpdater, Hooks, Props};
+use iocraft::{CanvasTextStyle, Color, Component, ComponentDrawer, ComponentUpdater, Hooks, Props};
 
 const BLOCKS: &'static [char] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
 
 #[derive(Default, Props)]
 pub(crate) struct SparklineProps {
     pub value: u64,
+    pub color: Option<Color>,
 }
 
 pub(crate) struct Sparkline {
     prev: Option<u64>,
     history: Vec<u64>,
+    style: CanvasTextStyle,
 }
 
 impl Sparkline {
@@ -22,7 +24,7 @@ impl Default for Sparkline {
         Sparkline {
             prev: None,
             history: std::iter::repeat(0).take(Self::MAX_WIDTH).collect(),
-            //..Default::default()
+            style: CanvasTextStyle::default(),
         }
     }
 }
@@ -46,6 +48,8 @@ impl Component for Sparkline {
 
         self.history.remove(0);
         self.history.push(diff);
+
+        self.style.color = props.color;
 
         updater.set_measure_func(Box::new(move |size, avail, _| {
             // `avail` is taffy::AvailableSpace, an enum of:
@@ -90,8 +94,6 @@ impl Component for Sparkline {
             })
             .collect();
 
-        drawer
-            .canvas()
-            .set_text(0, 0, &content, CanvasTextStyle::default());
+        drawer.canvas().set_text(0, 0, &content, self.style);
     }
 }

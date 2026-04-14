@@ -31,8 +31,16 @@ pub(crate) fn PoolView(props: &PoolViewProps, hooks: Hooks) -> impl Into<AnyElem
                     //background_color: Color::Rgb { r: 128, g: 0, b: 0 },
                     flex_direction: FlexDirection::Column,
                 ) {
-                    Text(content: "Read", wrap: TextWrap::NoWrap)
-                    Text(content: "Write", wrap: TextWrap::NoWrap)
+                    Text(
+                        content: "Read",
+                        color: palette.text,
+                        wrap: TextWrap::NoWrap,
+                    )
+                    Text(
+                        content: "Write",
+                        color: palette.text,
+                        wrap: TextWrap::NoWrap,
+                    )
                 }
                 View(
                     //background_color: Color::Rgb { r: 0, g: 128, b: 0 },
@@ -41,10 +49,10 @@ pub(crate) fn PoolView(props: &PoolViewProps, hooks: Hooks) -> impl Into<AnyElem
                     //overflow_x: Overflow::Hidden,
                 ) {
                     View(background_color: palette.gutter) {
-                        Sparkline(value: props.data.read)
+                        Sparkline(value: props.data.read, color: palette.text)
                     }
                     View(background_color: palette.gutter) {
-                        Sparkline(value: props.data.write)
+                        Sparkline(value: props.data.write, color: palette.text)
                     }
                 }
                 View(
