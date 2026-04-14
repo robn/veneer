@@ -1,3 +1,6 @@
+mod label;
+pub(crate) use label::*;
+
 mod meter;
 pub(crate) use meter::*;
 

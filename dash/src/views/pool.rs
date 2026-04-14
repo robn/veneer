@@ -1,14 +1,11 @@
 use crate::{
-    components::{Meter, Panel, Sparkline},
+    components::{Label, Meter, Panel, Sparkline},
     PoolData, Theme,
 };
 use bytesize::ByteSize;
 use iocraft::{
-    component,
-    components::{Text, TextWrap, View},
-    element,
-    hooks::UseContext,
-    AnyElement, FlexDirection, Hooks, JustifyContent, Props,
+    component, components::View, element, hooks::UseContext, AnyElement, FlexDirection, Hooks,
+    JustifyContent, Props,
 };
 
 #[derive(Default, Props)]
@@ -31,16 +28,8 @@ pub(crate) fn PoolView(props: &PoolViewProps, hooks: Hooks) -> impl Into<AnyElem
                     //background_color: Color::Rgb { r: 128, g: 0, b: 0 },
                     flex_direction: FlexDirection::Column,
                 ) {
-                    Text(
-                        content: "Read",
-                        color: palette.text,
-                        wrap: TextWrap::NoWrap,
-                    )
-                    Text(
-                        content: "Write",
-                        color: palette.text,
-                        wrap: TextWrap::NoWrap,
-                    )
+                    Label(content: "Read")
+                    Label(content: "Write")
                 }
                 View(
                     //background_color: Color::Rgb { r: 0, g: 128, b: 0 },
@@ -67,20 +56,9 @@ pub(crate) fn PoolView(props: &PoolViewProps, hooks: Hooks) -> impl Into<AnyElem
                     //background_color: Color::Rgb { r: 128, g: 0, b: 128 },
                     flex_direction: FlexDirection::Column,
                 ) {
-                    Text(
-                        content: props.data.state.to_string(),
-                        color: palette.text,
-                        wrap: TextWrap::NoWrap)
-                    Text(
-                        content: format!("Size: {}", ByteSize::b(props.data.size)),
-                        color: palette.text,
-                        wrap: TextWrap::NoWrap,
-                    )
-                    Text(
-                        content: format!("Used: {}", ByteSize::b(props.data.alloc)),
-                        color: palette.text,
-                        wrap: TextWrap::NoWrap,
-                    )
+                    Label(content: props.data.state.to_string())
+                    Label(content: format!("Size: {}", ByteSize::b(props.data.size)))
+                    Label(content: format!("Used: {}", ByteSize::b(props.data.alloc)))
                 }
             }
             //Text(content: format!("{:#?}", &props.data._wat), color: palette.secondary)
