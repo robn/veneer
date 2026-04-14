@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 bytesize = "2.3"
-iocraft = "0.8"
+#iocraft = "0.8"
+iocraft = { git = "https://github.com/robn/iocraft.git", branch = "text-align-overflow" }
 smol = "2.0"
 veneer = { path = "../veneer" }

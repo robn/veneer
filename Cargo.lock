@@ -967,14 +967,14 @@ dependencies = [
 [[package]]
 name = "iocraft"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cc99ec2f29c9c5f0ae7862dd6f12b93c9122282c9fe151e8648a9cc7301aa3f"
+source = "git+https://github.com/robn/iocraft.git?branch=text-align-overflow#be6ced21d2545b60a3e2fab0841bdc669956967b"
 dependencies = [
  "bitflags 2.11.0",
  "crossterm",
  "futures",
  "generational-box",
  "iocraft-macros",
+ "regex",
  "taffy",
  "unicode-width 0.1.14",
 ]
@@ -982,13 +982,11 @@ dependencies = [
 [[package]]
 name = "iocraft-macros"
 version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2a8b12929295d5fea225570fd69a41084e2949d56ce0c20ff22494ef13e0d56"
+source = "git+https://github.com/robn/iocraft.git?branch=text-align-overflow#be6ced21d2545b60a3e2fab0841bdc669956967b"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
- "uuid",
 ]
 
 [[package]]
