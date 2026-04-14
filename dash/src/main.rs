@@ -89,41 +89,41 @@ fn Dash(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     }
 
     element! {
-        View(
-            width,
-            height,
-            background_color: theme.get().palette().background,
-            flex_direction: FlexDirection::Column,
-        ) {
-            #(match &*state.read() {
-                DashState::Loaded(Ok(data)) => element! {
-                    Fragment {
-                        #(data.pools.iter().map(|(name,data)| {
-                            element! {
-                                ContextProvider(value: Context::owned(theme.get())) {
+        ContextProvider(value: Context::owned(theme.get())) {
+            View(
+                width,
+                height,
+                background_color: theme.get().palette().background,
+                flex_direction: FlexDirection::Column,
+            ) {
+                #(match &*state.read() {
+                    DashState::Loaded(Ok(data)) => element! {
+                        Fragment {
+                            #(data.pools.iter().map(|(name,data)| {
+                                element! {
                                     PoolView(key: name.clone(), data: data.clone())
                                 }
-                            }
-                        }))
-                    }
-                }.into_any(),
-                DashState::Loaded(Err(err)) => element! {
-                    View(
-                        flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        width: 100pct,
-                        height: 100pct,
-                        padding: 2,
-                    ) {
-                        Text(content: "Error!", weight: Weight::Bold, color: Color::Red)
-                        Text(content: format!("{:#}", err))
-                    }
-                }.into_any(),
-                _ => element! {
-                    Text(content: "loading")
-                }.into_any(),
-            })
+                            }))
+                        }
+                    }.into_any(),
+                    DashState::Loaded(Err(err)) => element! {
+                        View(
+                            flex_direction: FlexDirection::Column,
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            width: 100pct,
+                            height: 100pct,
+                            padding: 2,
+                        ) {
+                            Text(content: "Error!", weight: Weight::Bold, color: Color::Red)
+                            Text(content: format!("{:#}", err))
+                        }
+                    }.into_any(),
+                    _ => element! {
+                        Text(content: "loading")
+                    }.into_any(),
+                })
+            }
         }
     }
 }
