@@ -92,11 +92,16 @@ struct Sparkline {
     history: Vec<u64>,
 }
 
+impl Sparkline {
+    const MIN_WIDTH: usize = 8;
+    const MAX_WIDTH: usize = 256;
+}
+
 impl Default for Sparkline {
     fn default() -> Self {
         Sparkline {
             prev: None,
-            history: std::iter::repeat(0).take(256).collect(),
+            history: std::iter::repeat(0).take(Self::MAX_WIDTH).collect(),
             //..Default::default()
         }
     }
@@ -122,22 +127,29 @@ impl Component for Sparkline {
         self.history.remove(0);
         self.history.push(diff);
 
-        updater.set_measure_func(Box::new(move |known_size, available_space, _style| {
-            // return is a taffy::geometry::Size<f32>, which we don't have named access to.
-            // `known_size` however is a taffy::geometry::Size<Option<f32>> and has deriving
-            // constructors, so we can work around it with this nonsense
-            let w = if available_space.width.is_definite() {
-                available_space.width.unwrap().min(256.0)
-            } else if available_space.width.compute_free_space(1.0) < 1.0 {
+        updater.set_measure_func(Box::new(move |size, avail, _| {
+            // `avail` is taffy::AvailableSpace, an enum of:
+            //   Definite(f32)
+            //   MinContent
+            //   MaxContent
+            // we can't get at its variants by name, but there are methods we can call to infer
+            // its value
+            let w = if avail.width.is_definite() {
+                // Definite(f32)
+                avail.width.unwrap().min(Self::MAX_WIDTH as _)
+            } else if avail.width.compute_free_space(1.0) < 1.0 {
                 // MinContent
-                8.0 as _
+                Self::MIN_WIDTH as _
             } else {
                 // MaxContent
-                256.0 as _
+                Self::MAX_WIDTH as _
             };
-            known_size
-                .map_width(|_| Some(w))
-                .map_height(|_| Some(1 as _))
+
+            // return type is taffy::Size<f32>, which we can't create by name. `size` however is
+            // a `taffy::Size<Option<f32>>`, and has methods that will create both
+            // `Size<Option<f32>>` and `Size<f32>`
+            size.map_width(|_| Some(w))
+                .map_height(|_| Some(1.0))
                 .map(|v| v.unwrap())
         }));
     }
