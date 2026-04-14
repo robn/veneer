@@ -504,6 +504,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dash"
+version = "0.1.0"
+dependencies = [
+ "bytesize",
+ "iocraft",
+ "smol",
+ "veneer",
+]
+
+[[package]]
 name = "deltae"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2418,16 +2428,6 @@ dependencies = [
  "serde_json",
  "unicode-xid",
  "wasmparser",
-]
-
-[[package]]
-name = "zdash"
-version = "0.1.0"
-dependencies = [
- "bytesize",
- "iocraft",
- "smol",
- "veneer",
 ]
 
 [[package]]
