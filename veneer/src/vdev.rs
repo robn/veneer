@@ -6,25 +6,25 @@
 
 use crate::nvenums::VdevType;
 use crate::nvtypes;
-use crate::util::AutoString;
 use crate::{Error, Handle};
+use anystring::AnyString;
 use nvpair::PairList;
 use std::rc::Rc;
 
 pub struct Vdev {
     handle: Rc<Handle>,
-    pool: AutoString,
+    pool: AnyString,
     id: u64,
     guid: u64,
     typ: VdevType,
 
     // XXX below are likely parameterised variants, but I want to see what they look like first
     parity: Option<usize>,
-    path: Option<AutoString>,
+    path: Option<AnyString>,
 }
 
 impl Vdev {
-    pub(crate) fn new(handle: Rc<Handle>, pool: AutoString, vl: &PairList) -> Result<Vdev, Error> {
+    pub(crate) fn new(handle: Rc<Handle>, pool: AnyString, vl: &PairList) -> Result<Vdev, Error> {
         let id = vl.get_u64("id").unwrap_or(0);
         let guid = vl.get_u64("guid").unwrap_or(0);
 

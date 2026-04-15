@@ -4,11 +4,12 @@
 
 // Copyright (c) 2023-2026, Rob Norris <robn@despairlabs.com>
 
+use anystring::AnyString;
 use veneer::VdevState;
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct PoolData {
-    pub name: String,
+    pub name: AnyString,
     pub state: VdevState,
     pub size: u64,
     pub alloc: u64,

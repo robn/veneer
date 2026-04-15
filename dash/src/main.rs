@@ -10,6 +10,7 @@ mod loader;
 mod theme;
 mod views;
 
+use anystring::AnyString;
 use iocraft::prelude::*;
 use std::collections::BTreeMap;
 use veneer::Error;
@@ -22,7 +23,7 @@ use crate::views::PoolView;
 
 #[derive(Default, Clone, Props)]
 struct DashPoolViewProps {
-    pools: BTreeMap<String, PoolData>,
+    pools: BTreeMap<AnyString, PoolData>,
 }
 
 #[component]
@@ -31,7 +32,7 @@ fn DashPoolView(props: &DashPoolViewProps) -> impl Into<AnyElement<'static>> {
         Fragment {
             #(props.pools.iter().map(|(name, data)| {
                 element! {
-                    PoolView(key: name.clone(), data: data.clone())
+                    PoolView(key: name.to_c_string(), data: data.clone())
                 }
             }))
         }
@@ -48,7 +49,7 @@ impl Loader for DashPoolViewProps {
             let stats = root.stats()?;
 
             let data = PoolData {
-                name: pool.name(),
+                name: pool.name().into(),
                 state: stats.state,
                 size: stats.space,
                 alloc: stats.alloc,
@@ -57,7 +58,7 @@ impl Loader for DashPoolViewProps {
                 _wat: format!("{:?}", stats),
             };
 
-            pools.insert(pool.name(), data);
+            pools.insert(pool.name().into(), data);
         }
 
         Ok(Self { pools })

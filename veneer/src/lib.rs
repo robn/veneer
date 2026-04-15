@@ -7,7 +7,6 @@
 mod error;
 mod nvenums;
 mod nvtypes;
-mod util;
 
 mod dataset;
 mod handle;

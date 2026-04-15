@@ -5,23 +5,23 @@
 // Copyright (c) 2023-2025, Rob Norris <robn@despairlabs.com>
 
 use crate::error::{Error, ResponseError};
-use crate::util::AutoString;
 use crate::{Dataset, Handle, Vdev};
 
+use anystring::AnyString;
 use std::rc::Rc;
 
 pub struct Pool {
     handle: Rc<Handle>,
-    name: AutoString,
+    name: AnyString,
 }
 
 impl Pool {
-    pub(crate) fn new(handle: Rc<Handle>, name: AutoString) -> Pool {
+    pub(crate) fn new(handle: Rc<Handle>, name: AnyString) -> Pool {
         Pool { handle, name }
     }
 
-    pub fn name(&self) -> String {
-        self.name.to_string()
+    pub fn name(&self) -> &AnyString {
+        &self.name
     }
 
     pub fn root_vdev(&self) -> Result<Vdev, Error> {

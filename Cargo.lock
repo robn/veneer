@@ -74,6 +74,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
+name = "anystring"
+version = "0.1.0"
+
+[[package]]
 name = "arrayvec"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -522,6 +526,7 @@ dependencies = [
 name = "dash"
 version = "0.1.0"
 dependencies = [
+ "anystring",
  "bytesize",
  "catppuccin",
  "iocraft",
@@ -2122,6 +2127,7 @@ dependencies = [
 name = "veneer"
 version = "0.1.0"
 dependencies = [
+ "anystring",
  "enum_stringify",
  "error_set",
  "nvpair",

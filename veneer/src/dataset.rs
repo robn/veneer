@@ -4,23 +4,23 @@
 
 // Copyright (c) 2023-2025, Rob Norris <robn@despairlabs.com>
 
-use crate::util::AutoString;
 use crate::{Error, Handle};
+use anystring::AnyString;
 use nvpair::PairList;
 use std::rc::Rc;
 
 pub struct Dataset {
     handle: Rc<Handle>,
-    name: AutoString,
+    name: AnyString,
 }
 
 impl Dataset {
-    pub(crate) fn new(handle: Rc<Handle>, name: AutoString) -> Dataset {
+    pub(crate) fn new(handle: Rc<Handle>, name: AnyString) -> Dataset {
         Dataset { handle, name }
     }
 
-    pub fn name(&self) -> String {
-        self.name.to_string()
+    pub fn name(&self) -> &AnyString {
+        &self.name
     }
 
     fn get_prop(&self, prop: &str) -> Result<Option<PairList>, Error> {
@@ -32,10 +32,10 @@ impl Dataset {
         Ok(self.get_prop(prop)?.and_then(|l| l.get_u64("value")))
     }
 
-    pub fn get_prop_string(&self, prop: &str) -> Result<Option<String>, Error> {
+    pub fn get_prop_string(&self, prop: &str) -> Result<Option<AnyString>, Error> {
         Ok(self
             .get_prop(prop)?
             .and_then(|l| l.get_c_string("value"))
-            .map(|cs| cs.to_string_lossy().to_string()))
+            .map(|cs| AnyString::from_c_string(cs)))
     }
 }

@@ -28,7 +28,9 @@ struct PoolState {
 }
 
 fn render_pool(frame: &mut Frame, rect: Rect, pool: &Pool, state: &PoolState) {
-    let block = Block::default().title(pool.name()).borders(Borders::ALL);
+    let block = Block::default()
+        .title(pool.name().to_string())
+        .borders(Borders::ALL);
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
     let rows = Layout::default()

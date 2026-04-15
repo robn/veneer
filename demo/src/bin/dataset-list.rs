@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for pool in z.pools()? {
         for dataset in pool.datasets()? {
             tb.push_record(
-                [dataset.name()]
+                [dataset.name().to_string()]
                     .into_iter()
                     .chain(
                         FIELDS
@@ -53,7 +53,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 Field::Bytes(s) => dataset
                                     .get_prop_u64(s)
                                     .map(|s| s.map(|n| ByteSize::b(n).display().iec().to_string())),
-                                Field::String(s) => dataset.get_prop_string(s),
+                                Field::String(s) => {
+                                    dataset.get_prop_string(s).map(|s| s.map(|v| v.to_string()))
+                                }
                             })
                             .map(|r| match r {
                                 Ok(Some(s)) => s,
