@@ -10,7 +10,6 @@ repository = "https://github.com/robn/veneer"
 anystring = { path = "../anystring" }
 bytesize = "2.3"
 catppuccin = "2.7"
-#iocraft = "0.8"
-iocraft = { git = "https://github.com/robn/iocraft.git", branch = "text-align-overflow" }
+iocraft = ">= 0.8.1, < 0.9"
 smol = "2.0"
 veneer = { path = "../veneer" }
