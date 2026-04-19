@@ -4,6 +4,7 @@
 
 // Copyright (c) 2023-2026, Rob Norris <robn@despairlabs.com>
 
+use iocraft::taffy::{AvailableSpace, Size};
 use iocraft::{CanvasTextStyle, Color, Component, ComponentDrawer, ComponentUpdater, Hooks, Props};
 
 const BLOCKS: &'static [char] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
@@ -57,30 +58,17 @@ impl Component for Sparkline {
 
         self.style.color = props.color;
 
-        updater.set_measure_func(Box::new(move |size, avail, _| {
-            // `avail` is taffy::AvailableSpace, an enum of:
-            //   Definite(f32)
-            //   MinContent
-            //   MaxContent
-            // we can't get at its variants by name, but there are methods we can call to infer
-            // its value
-            let w = if avail.width.is_definite() {
-                // Definite(f32)
-                avail.width.unwrap().min(Self::MAX_WIDTH as _)
-            } else if avail.width.compute_free_space(1.0) < 1.0 {
-                // MinContent
-                Self::MIN_WIDTH as _
-            } else {
-                // MaxContent
-                Self::MAX_WIDTH as _
+        updater.set_measure_func(Box::new(move |_, avail, _| {
+            let w = match avail.width {
+                AvailableSpace::Definite(s) => s.min(Self::MAX_WIDTH as _),
+                AvailableSpace::MinContent => Self::MIN_WIDTH as _,
+                AvailableSpace::MaxContent => Self::MAX_WIDTH as _,
             };
 
-            // return type is taffy::Size<f32>, which we can't create by name. `size` however is
-            // a `taffy::Size<Option<f32>>`, and has methods that will create both
-            // `Size<Option<f32>>` and `Size<f32>`
-            size.map_width(|_| Some(w))
-                .map_height(|_| Some(1.0))
-                .map(|v| v.unwrap())
+            Size {
+                width: w,
+                height: 1.0,
+            }
         }));
     }
 
