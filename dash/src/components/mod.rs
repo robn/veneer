@@ -13,8 +13,5 @@ pub(crate) use meter::*;
 mod panel;
 pub(crate) use panel::*;
 
-mod props_provider;
-pub(crate) use props_provider::*;
-
 mod sparkline;
 pub(crate) use sparkline::*;

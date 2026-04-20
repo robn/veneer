@@ -4,5 +4,11 @@
 
 // Copyright (c) 2023-2026, Rob Norris <robn@despairlabs.com>
 
+mod debug;
+pub(crate) use debug::*;
+
 mod pool;
 pub(crate) use pool::*;
+
+mod pools;
+pub(crate) use pools::*;
