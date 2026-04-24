@@ -17,7 +17,7 @@ use nvpair::PairList;
 pub struct Handle {
     dev: File,
     cmd: ZFSCommand,
-    buf: [u8; 262144],
+    buf: Box<[u8; 262144]>,
 }
 
 #[derive(Debug)]
@@ -37,7 +37,7 @@ impl Handle {
         Ok(Handle {
             dev: File::open(path)?,
             cmd: Default::default(),
-            buf: [0; 262144],
+            buf: Box::new([0; 262144]),
         })
     }
 
