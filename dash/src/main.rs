@@ -59,5 +59,6 @@ fn Dash(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
 }
 
 fn main() {
+    data::start();
     smol::block_on(element!(Dash).fullscreen()).unwrap();
 }
