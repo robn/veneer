@@ -145,7 +145,7 @@ impl PairList {
     {
         CString::new(t)
             .ok()
-            .and_then(|key| self.pairs().filter(|p| p.0 == key).next())
+            .and_then(|key| self.pairs().find(|p| p.0 == key))
     }
 
     pub fn get_list<T>(&self, t: T) -> Option<&PairList>
