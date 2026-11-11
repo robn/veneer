@@ -404,3 +404,9 @@ impl Parser {
         Ok((Some(Pair(name, data)), nbuf))
     }
 }
+
+impl Default for Parser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
