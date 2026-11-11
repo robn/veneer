@@ -7,7 +7,7 @@
 use iocraft::taffy::{AvailableSpace, Size};
 use iocraft::{CanvasTextStyle, Color, Component, ComponentDrawer, ComponentUpdater, Hooks, Props};
 
-const BLOCKS: &'static [char] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+const BLOCKS: &[char] = &[' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
 
 #[derive(Default, Props)]
 pub(crate) struct SparklineProps {
