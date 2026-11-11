@@ -90,8 +90,7 @@ impl Vdev {
             .and_then(|l| l.get_list_slice("children").map(|s| s.to_vec()))
             .unwrap_or(vec![])
             .iter()
-            .map(|vl| Vdev::new(self.handle.clone(), self.pool.clone(), vl))
-            .flatten()
+            .flat_map(|vl| Vdev::new(self.handle.clone(), self.pool.clone(), vl))
             .collect())
     }
 
