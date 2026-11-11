@@ -68,7 +68,7 @@ impl AnyString {
     pub fn get_str(&self) -> &str {
         self.s
             .get_or_init(|| self.c.get().map_or_else(
-                || String::default(),
+                String::default,
                 |c| c.to_string_lossy().into_owned()
             )).as_str()
     }
@@ -77,7 +77,7 @@ impl AnyString {
     pub fn get_c_str(&self) -> &CStr {
         self.c
             .get_or_init(|| self.s.get().map_or_else(
-                || CString::default(),
+                CString::default,
                 |s| {
                     let v = s.as_bytes().to_vec();
                     // safe, because the source string can't have nulls
