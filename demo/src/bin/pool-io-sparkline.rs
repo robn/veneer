@@ -97,13 +97,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
 
-        if crossterm::event::poll(timeout)? {
-            if let Event::Key(key) = crossterm::event::read()? {
-                if let KeyCode::Char('q') = key.code {
-                    break;
-                }
-            }
+        if crossterm::event::poll(timeout)?
+            && let Event::Key(key) = crossterm::event::read()?
+            && let KeyCode::Char('q') = key.code {
+                break;
         }
+
         if last_tick.elapsed() >= tick {
             for (pool, state) in pool_state.iter_mut() {
                 let (r, w) = get_stats(&pool)?;
