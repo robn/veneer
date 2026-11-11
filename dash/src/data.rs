@@ -33,7 +33,10 @@ static DATA: LazyLock<Arc<RwLock<Data>>> = LazyLock::new(|| Arc::new(RwLock::new
 fn fetch() -> Result<Data, Error> {
     let z = veneer::open()?;
 
+    #[allow(clippy::mutable_key_type)]
     let mut pools = BTreeSet::new();
+
+    #[allow(clippy::mutable_key_type)]
     let mut pool_data = BTreeMap::new();
 
     for pool in z.pools()? {
