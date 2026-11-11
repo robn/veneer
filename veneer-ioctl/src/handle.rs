@@ -75,7 +75,7 @@ impl Handle {
     fn ioc_name_list(&mut self, req: c_ulong, cname: &CStr) -> IOCResultList {
         self.reset();
         let name = cname.to_bytes_with_nul();
-        self.cmd.name[..name.len()].copy_from_slice(&name);
+        self.cmd.name[..name.len()].copy_from_slice(name);
         self.invoke_list(req)
     }
 
@@ -83,7 +83,7 @@ impl Handle {
     fn ioc_name_list_cookie(&mut self, req: c_ulong, cname: &CStr, cookie: u64) -> IOCResultIter {
         self.reset();
         let name = cname.to_bytes_with_nul();
-        self.cmd.name[..name.len()].copy_from_slice(&name);
+        self.cmd.name[..name.len()].copy_from_slice(name);
         self.cmd.cookie = cookie;
         let list = self.invoke_list(req)?;
         Ok(IterState {
