@@ -30,7 +30,7 @@ impl Default for Sparkline {
     fn default() -> Self {
         Sparkline {
             prev: None,
-            history: std::iter::repeat(0).take(Self::MAX_WIDTH).collect(),
+            history: std::iter::repeat_n(0, Self::MAX_WIDTH).collect(),
             style: CanvasTextStyle::default(),
         }
     }
