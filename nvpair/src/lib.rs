@@ -59,7 +59,7 @@ pub enum PairValue {
     Int16Array(Vec<i16>),
     UInt16Array(Vec<u16>),
     Int32Array(Vec<i32>),
-    UInt32Array(Vec<i32>),
+    UInt32Array(Vec<u32>),
     Int64Array(Vec<i64>),
     UInt64Array(Vec<u64>),
     StringArray(Vec<CString>),
