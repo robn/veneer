@@ -79,7 +79,7 @@ impl Handle {
                     .ioc
                     .borrow_mut()
                     .dataset_list_next(&name, cookie)
-                    .and_then(|is| Ok(Some(is)))
+                    .map(Some)
                     .or_else(|e| match e {
                         veneer_ioctl::Error::IOError(ref ioe) => match ioe.raw_os_error() {
                             Some(3) => Ok(None),
