@@ -217,14 +217,7 @@ impl Ord for AnyString {
 
 impl PartialOrd for AnyString {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if self.canonical == other.canonical {
-            match self.canonical {
-                Canonical::String => self.s.get().unwrap().partial_cmp(other.s.get().unwrap()),
-                Canonical::CString => self.c.get().unwrap().partial_cmp(other.c.get().unwrap()),
-            }
-        } else {
-            self.as_bytes().partial_cmp(other.as_bytes())
-        }
+        Some(self.cmp(other))
     }
 }
 
