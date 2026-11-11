@@ -276,13 +276,13 @@ impl Parser {
 
         let lbuf = &buf[4..];
 
-        let (version, lbuf) = self.parse_int::<i32>(&lbuf)?;
-        let (flags, lbuf) = self.parse_int::<u32>(&lbuf)?;
+        let (version, lbuf) = self.parse_int::<i32>(lbuf)?;
+        let (flags, lbuf) = self.parse_int::<u32>(lbuf)?;
 
         assert_eq!(version, 0); // NV_VERSION
         assert_eq!(flags, 1); // XXX NV_UNIQUE_NAME|NV_UNIQUE_NAME_TYPE
 
-        let (l, _) = self.parse_nvlist(&lbuf)?;
+        let (l, _) = self.parse_nvlist(lbuf)?;
         Ok(l)
     }
 
@@ -294,7 +294,7 @@ impl Parser {
         if buf.len() < s {
             return Err(ParseError::ShortRead);
         }
-        let v = T::from_bytes_le(&buf).unwrap().1;
+        let v = T::from_bytes_le(buf).unwrap().1;
         Ok((v, &buf[s..]))
     }
 
@@ -319,20 +319,20 @@ impl Parser {
     }
 
     fn parse_pair<'a>(&'a self, buf: &'a [u8]) -> Result<(Option<Pair>, &'a [u8]), ParseError> {
-        let (len, buf) = self.parse_int::<i32>(&buf)?;
+        let (len, buf) = self.parse_int::<i32>(buf)?;
         if len == 0 {
             return Ok((None, buf));
         }
 
         let (buf, mut nbuf) = buf.split_at((len - 4) as usize);
 
-        let (_, buf) = self.parse_int::<i16>(&buf)?; // name_len
-        let (_, buf) = self.parse_int::<i16>(&buf)?; // nvp_reserve
+        let (_, buf) = self.parse_int::<i16>(buf)?; // name_len
+        let (_, buf) = self.parse_int::<i16>(buf)?; // nvp_reserve
 
-        let (nelems, buf) = self.parse_int::<i32>(&buf)?;
-        let (ityp, buf) = self.parse_int::<i32>(&buf)?;
+        let (nelems, buf) = self.parse_int::<i32>(buf)?;
+        let (ityp, buf) = self.parse_int::<i32>(buf)?;
 
-        let (name, buf) = self.parse_string(&buf)?;
+        let (name, buf) = self.parse_string(buf)?;
 
         let typ: PairType =
             FromPrimitive::from_i32(ityp).ok_or(ParseError::UnknownPairType(ityp))?;
@@ -349,8 +349,8 @@ impl Parser {
             PairType::UInt32 => todo!(),
             PairType::Int64 => todo!(),
 
-            PairType::UInt64 => PairValue::UInt64(self.parse_int::<u64>(&buf)?.0),
-            PairType::String => PairValue::String(self.parse_string(&buf)?.0),
+            PairType::UInt64 => PairValue::UInt64(self.parse_int::<u64>(buf)?.0),
+            PairType::String => PairValue::String(self.parse_string(buf)?.0),
 
             PairType::ByteArray => todo!(),
             PairType::Int16Array => todo!(),
@@ -364,7 +364,7 @@ impl Parser {
                 let mut pbuf = buf;
                 for _ in 0..nelems {
                     let n;
-                    (n, pbuf) = self.parse_int::<u64>(&pbuf)?;
+                    (n, pbuf) = self.parse_int::<u64>(pbuf)?;
                     v.push(n);
                 }
                 PairValue::UInt64Array(v)
@@ -376,7 +376,7 @@ impl Parser {
             // embedded nvlists start at the "next" pair position, rather than at the "value"
             // position of this pair. the real "next" pair follows after the nvlist
             PairType::NVList => {
-                let (l, pbuf) = self.parse_nvlist(&nbuf)?;
+                let (l, pbuf) = self.parse_nvlist(nbuf)?;
                 nbuf = pbuf;
                 PairValue::List(l)
             }
@@ -385,7 +385,7 @@ impl Parser {
                 let mut pbuf = nbuf;
                 for _ in 0..nelems {
                     let l;
-                    (l, pbuf) = self.parse_nvlist(&pbuf)?;
+                    (l, pbuf) = self.parse_nvlist(pbuf)?;
                     v.push(l);
                 }
                 nbuf = pbuf;
