@@ -46,6 +46,7 @@ impl AnyString {
     }
 
     // create from references to same
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> AnyString {
         Self::from_string(s.into())
     }
