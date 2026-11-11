@@ -8,6 +8,7 @@ use std::sync::OnceLock;
 use std::cmp::Ordering;
 use std::ffi::{CStr, CString};
 use std::fmt;
+use std::hash::{Hash,Hasher};
 
 // AnyString is a thing that will take a String or a CString and do a lossy conversion to the other
 // kind on demand, which is almost always what you want for messing with C stuff from Rust.
@@ -218,6 +219,15 @@ impl Ord for AnyString {
 impl PartialOrd for AnyString {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+impl Hash for AnyString {
+    fn hash<H: Hasher>(&self, h: &mut H) {
+        match self.canonical {
+            Canonical::String => self.s.get().unwrap().hash(h),
+            Canonical::CString => self.c.get().unwrap().hash(h),
+        }
     }
 }
 
