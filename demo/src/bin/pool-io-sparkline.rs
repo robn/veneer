@@ -55,8 +55,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for pool in z.pools()? {
         let (r, w) = get_stats(&pool)?;
-        let read_v: Vec<u64> = iter::repeat(0).take(200).collect();
-        let write_v: Vec<u64> = iter::repeat(0).take(200).collect();
+        let read_v: Vec<u64> = iter::repeat_n(0, 200).collect();
+        let write_v: Vec<u64> = iter::repeat_n(0, 200).collect();
         pool_state.push((
             pool,
             PoolState {
@@ -82,8 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let rows = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(
-                    iter::repeat(Constraint::Length(4))
-                        .take(pool_state.len())
+                    iter::repeat_n(Constraint::Length(4), pool_state.len())
                         .chain(iter::once(Constraint::Min(0)))
                         .collect::<Vec<_>>(),
                 )

@@ -26,8 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let graph = match indent {
             0 => "".into(),
             1 => hook.into(),
-            _ => iter::repeat("│ ")
-                .take(indent - 1)
+            _ => iter::repeat_n("│ ", indent - 1)
                 .chain(iter::once(hook))
                 .collect::<String>(),
         };
