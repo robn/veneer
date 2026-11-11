@@ -53,7 +53,7 @@ pub(crate) fn PoolView(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                         View(
                             //background_color: Color::Rgb { r: 0, g: 128, b: 0 },
                             flex_direction: FlexDirection::Column,
-                            flex_grow: 1.0,
+                            flex_grow: 1.0_f32,
                             //overflow_x: Overflow::Hidden,
                         ) {
                             View(background_color: palette.gutter) {

@@ -19,7 +19,7 @@ pub(crate) struct Data {
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct PoolData {
-    pub name: AnyString,
+    //pub name: AnyString,
     pub state: VdevState,
     pub size: u64,
     pub alloc: u64,
@@ -44,7 +44,7 @@ fn fetch() -> Result<Data, Error> {
         pool_data.insert(
             pool.name().into(),
             PoolData {
-                name: pool.name().into(),
+                //name: pool.name().into(),
                 state: stats.state,
                 size: stats.space,
                 alloc: stats.alloc,
