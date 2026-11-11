@@ -89,8 +89,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .split(f.area());
             pool_state
                 .iter()
-                .zip(0..pool_state.len())
-                .for_each(|((pool, state), row)| render_pool(f, rows[row], pool, state));
+                .enumerate()
+                .for_each(|(row, (pool, state))| render_pool(f, rows[row], pool, state));
         })?;
 
         let timeout = tick
