@@ -36,6 +36,6 @@ impl Dataset {
         Ok(self
             .get_prop(prop)?
             .and_then(|l| l.get_c_string("value"))
-            .map(|cs| AnyString::from_c_string(cs)))
+            .map(AnyString::from_c_string))
     }
 }

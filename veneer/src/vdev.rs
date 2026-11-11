@@ -99,10 +99,7 @@ impl Vdev {
         Ok(self
             .handle
             .get_vdev(&self.pool, self.guid)?
-            .and_then(|l| {
-                l.get_u64_slice("vdev_stats")
-                    .map(|s| nvtypes::VdevStats::from(s))
-            })
+            .and_then(|l| l.get_u64_slice("vdev_stats").map(nvtypes::VdevStats::from))
             .unwrap_or_default())
     }
 }
