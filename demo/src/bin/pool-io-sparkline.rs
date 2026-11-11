@@ -105,7 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         if last_tick.elapsed() >= tick {
             for (pool, state) in pool_state.iter_mut() {
-                let (r, w) = get_stats(&pool)?;
+                let (r, w) = get_stats(pool)?;
                 let (dr, dw) = (r - state.read_last, w - state.write_last);
                 state.read_history.pop();
                 state.read_history.insert(0, dr);
