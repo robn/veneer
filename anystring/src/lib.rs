@@ -89,10 +89,8 @@ impl AnyString {
             )).as_c_str()
     }
 
-    // get a new string
-    pub fn to_string(&self) -> String {
-        self.get_str().to_string()
-    }
+    // to_string(&self) -> String is derived from the Display trait
+
     // get a new cstring
     pub fn to_c_string(&self) -> CString {
         CString::from(self.get_c_str())
