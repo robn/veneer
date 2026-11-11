@@ -26,7 +26,7 @@ pub(crate) fn Label(props: &LabelProps, hooks: Hooks) -> impl Into<AnyElement<'s
     element! {
         Text(
             content: &props.content,
-            color: props.color.unwrap_or_else(|| palette.text),
+            color: props.color.unwrap_or(palette.text),
             wrap: TextWrap::NoWrap,
         )
     }

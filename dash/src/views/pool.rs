@@ -28,7 +28,7 @@ pub(crate) fn PoolView(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         let name = name.clone();
         hooks.use_future(async move {
             loop {
-                data.set(data::get().pool_data.get(&name).map(|d| d.clone()));
+                data.set(data::get().pool_data.get(&name).cloned());
                 smol::Timer::after(std::time::Duration::from_secs(1)).await;
             }
         });

@@ -24,7 +24,7 @@ use iocraft::{
 fn Dash(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let (width, height) = hooks.use_terminal_size();
     let mut system = hooks.use_context_mut::<SystemContext>();
-    let mut theme = hooks.use_state(|| Theme::default());
+    let mut theme = hooks.use_state(Theme::default);
 
     let mut exit = hooks.use_state(|| false);
     hooks.use_terminal_events({
